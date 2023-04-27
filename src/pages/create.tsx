@@ -2,12 +2,18 @@ import { Button, Result, Typography } from "antd";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { Wallet } from "xrpl";
-import { useXrpLedgerClient } from "~/hooks/useXrpLedgerHook";
+
+import { LS_KEY } from "~/consts";
+import {
+  useXrpLedgerClient,
+  useXrpLedgerWallet,
+} from "~/hooks/useXrpLedgerHook";
 
 export default function Create() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const { client } = useXrpLedgerClient();
+  const { setWallets } = useXrpLedgerWallet();
   const [wallet, setWallet] = useState<Wallet>();
 
   return (
@@ -64,10 +70,21 @@ export default function Create() {
                 .fundWallet()
                 .then((res) => {
                   setWallet(res.wallet);
+
+                  const seeds = JSON.parse(
+                    localStorage.getItem(LS_KEY.WALLET_SEEDS) ?? "[]"
+                  ) as Array<string>;
+
+                  seeds.push(res.wallet.seed as string);
+
                   localStorage.setItem(
-                    "__wallet_seed__",
-                    String(res.wallet.seed)
+                    LS_KEY.WALLET_SEEDS,
+                    JSON.stringify(seeds)
                   );
+
+                  const wallets = seeds.map((seed) => Wallet.fromSeed(seed));
+
+                  setWallets(wallets);
                 })
                 .finally(() => {
                   setLoading(false);

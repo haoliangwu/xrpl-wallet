@@ -7,6 +7,7 @@ import {
   XrpLedgerClientProvider,
   DEFAULT_CTX_VALUE,
 } from "~/hooks/useXrpLedgerHook";
+import { LS_KEY } from "~/consts";
 
 import "antd/dist/reset.css";
 
@@ -16,13 +17,19 @@ import "../styles/uno.css";
 function MyApp({ Component, pageProps }: AppProps) {
   const [network, setNetwork] = useState(DEFAULT_CTX_VALUE.network);
   const [client, setClient] = useState<Client>();
+  const [wallets, setWallets] = useState<Wallet[]>([]);
   const [wallet, setWallet] = useState<Wallet>();
 
   useEffect(() => {
-    if (typeof localStorage.getItem("__wallet_seed__") === "string") {
-      setWallet(
-        Wallet.fromSeed(localStorage.getItem("__wallet_seed__") as string)
-      );
+    if (typeof localStorage.getItem(LS_KEY.WALLET_SEEDS) === "string") {
+      const seeds = JSON.parse(
+        localStorage.getItem(LS_KEY.WALLET_SEEDS) ?? "[]"
+      ) as Array<string>;
+
+      const wallets = seeds.map((seed) => Wallet.fromSeed(seed));
+
+      setWallet(wallets[0]);
+      setWallets(wallets);
     }
   }, []);
 
@@ -44,11 +51,13 @@ function MyApp({ Component, pageProps }: AppProps) {
     return {
       client,
       wallet,
+      wallets,
       network,
       setNetwork,
       setWallet,
+      setWallets,
     };
-  }, [client, wallet, network]);
+  }, [client, wallet, wallets, network]);
 
   return client ? (
     <XrpLedgerClientProvider.Provider value={ctx}>

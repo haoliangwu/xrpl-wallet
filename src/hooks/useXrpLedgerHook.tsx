@@ -1,11 +1,5 @@
 import { useRouter } from "next/router";
-import {
-  Dispatch,
-  SetStateAction,
-  createContext,
-  useContext,
-  useEffect,
-} from "react";
+import { Dispatch, SetStateAction, createContext, useContext } from "react";
 import { Client, Wallet } from "xrpl";
 
 let client: Client;
@@ -13,13 +7,19 @@ let client: Client;
 interface XrpLedgerContext {
   client?: Client;
   wallet?: Wallet;
+  wallets: Wallet[];
   network: string;
   setNetwork: Dispatch<SetStateAction<string>>;
+  setWallet: Dispatch<SetStateAction<Wallet | undefined>>;
+  setWallets: Dispatch<SetStateAction<Wallet[]>>;
 }
 
 export const DEFAULT_CTX_VALUE: XrpLedgerContext = {
   network: "wss://s.altnet.rippletest.net:51233",
+  wallets: [],
   setNetwork: () => {},
+  setWallet: () => {},
+  setWallets: () => {},
 };
 
 export const XrpLedgerClientProvider =
@@ -43,7 +43,9 @@ export function useXrpLedgerClient() {
 
 export function useXrpLedgerWallet() {
   const router = useRouter();
-  const { wallet } = useContext(XrpLedgerClientProvider);
+  const { wallet, wallets, setWallet, setWallets } = useContext(
+    XrpLedgerClientProvider
+  );
 
   if (!wallet) {
     router.push("/create");
@@ -53,5 +55,8 @@ export function useXrpLedgerWallet() {
 
   return {
     wallet,
+    wallets,
+    setWallet,
+    setWallets,
   };
 }

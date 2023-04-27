@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { Select, Avatar, Typography, Divider, Button } from "antd";
+import { CheckOutlined } from "@ant-design/icons";
+import {
+  Select,
+  Avatar,
+  Typography,
+  Divider,
+  Button,
+  Dropdown,
+  MenuProps,
+} from "antd";
 import { UserOutlined } from "@ant-design/icons";
 import Image from "next/image";
 import { Wallet, AccountInfoResponse, dropsToXrp } from "xrpl";
@@ -9,6 +18,7 @@ import {
   useXrpLedgerClient,
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
+import Link from "next/link";
 
 export default function Home() {
   const router = useRouter();
@@ -16,7 +26,7 @@ export default function Home() {
     useState<AccountInfoResponse["result"]["account_data"]>();
 
   const { client, network, setNetwork } = useXrpLedgerClient();
-  const { wallet } = useXrpLedgerWallet();
+  const { wallet, wallets, setWallet } = useXrpLedgerWallet();
 
   useEffect(() => {
     if (!wallet) {
@@ -63,7 +73,38 @@ export default function Home() {
           />
         </div>
         <div>
-          <Avatar size="large" icon={<UserOutlined />} />
+          <Dropdown
+            menu={{
+              items: [
+                ...wallets.map((_wallet, idx) => {
+                  const isActive = _wallet.address === wallet.address;
+                  return {
+                    key: _wallet.address,
+                    label: (
+                      <div
+                        className="flex items-center"
+                        onClick={() => {
+                          setWallet(_wallet);
+                        }}
+                      >
+                        <span className="flex-auto">Account {idx + 1}</span>
+                        {isActive && <CheckOutlined />}
+                      </div>
+                    ),
+                  };
+                }),
+                {
+                  type: "divider",
+                },
+                {
+                  key: "create",
+                  label: <Link href="/create">Create Account</Link>,
+                },
+              ],
+            }}
+          >
+            <Avatar size="large" icon={<UserOutlined />} />
+          </Dropdown>
         </div>
       </div>
       <div className="bg-#ffffff p-4">

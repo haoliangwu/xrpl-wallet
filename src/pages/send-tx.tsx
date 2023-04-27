@@ -21,7 +21,6 @@ export default function SendTx() {
     <div className="relative w-100vw h-100vh">
       <div className="absolute top-50% left-50% transform translate-x-[-50%] translate-y-[-50%]">
         <Form
-          initialValues={{ address: "rHBQz3hb92jgGs7juopwGAxjDjiZW4GDiV" }}
           disabled={loading}
           className="w-500px"
           name="basic"
