@@ -2,7 +2,7 @@ import { Button, Result, Typography } from "antd";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { Wallet } from "xrpl";
-import useXrpLedgerClient from "~/hooks/useXrpLedgerClient";
+import { useXrpLedgerClient } from "~/hooks/useXrpLedgerHook";
 
 export default function Create() {
   const router = useRouter();

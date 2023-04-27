@@ -1,41 +1,39 @@
 import { useEffect, useState } from "react";
-import { Select, Avatar, Typography, Divider } from "antd";
+import { Select, Avatar, Typography, Divider, Button } from "antd";
 import { UserOutlined } from "@ant-design/icons";
 import Image from "next/image";
-import { Client, Wallet, AccountInfoResponse } from "xrpl";
+import { Wallet, AccountInfoResponse, dropsToXrp } from "xrpl";
 import { useRouter } from "next/router";
 
-import { dropsToXRP } from "~/utils";
-import useXrpLedgerClient from "~/hooks/useXrpLedgerClient";
+import {
+  useXrpLedgerClient,
+  useXrpLedgerWallet,
+} from "~/hooks/useXrpLedgerHook";
 
 export default function Home() {
   const router = useRouter();
-  const [seed] = useState<string>(
-    () => localStorage.getItem("__wallet_seed__") ?? ""
-  );
-  const [wallet, setWallet] = useState<Wallet>();
   const [account, setAccount] =
     useState<AccountInfoResponse["result"]["account_data"]>();
 
   const { client, network, setNetwork } = useXrpLedgerClient();
+  const { wallet } = useXrpLedgerWallet();
 
   useEffect(() => {
-    if (!seed) router.push("/create");
-
-    const test_wallet = Wallet.fromSeed(seed);
-
-    setWallet(test_wallet);
+    if (!wallet) {
+      router.push("/create");
+      return;
+    }
 
     client
       .request({
         command: "account_info",
-        account: test_wallet.address,
+        account: wallet.address,
         ledger_index: "validated",
       })
       .then(({ result }) => {
         setAccount(result.account_data);
       });
-  }, [client, seed, router]);
+  }, [client, router, wallet]);
 
   return (
     <div className="w-1000px mx-auto">
@@ -77,8 +75,18 @@ export default function Home() {
         <div className="flex flex-col items-center">
           <Typography.Title level={4}>Balance</Typography.Title>
           <div>
-            {account?.Balance ? dropsToXRP(account.Balance).toFormat(0) : "-"}
+            {account?.Balance ? dropsToXrp(account.Balance) : "-"}
             <span className="ml-1">XRP</span>
+          </div>
+          <div className="flex gap-4 mt-4">
+            <Button
+              type="primary"
+              onClick={() => {
+                router.push("/send-tx");
+              }}
+            >
+              Send
+            </Button>
           </div>
         </div>
         <Divider />

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AppProps } from "next/app";
-import { Client } from "xrpl";
+import { Client, Wallet } from "xrpl";
 import { Spin } from "antd";
 
 import {
   XrpLedgerClientProvider,
   DEFAULT_CTX_VALUE,
-} from "~/hooks/useXrpLedgerClient";
+} from "~/hooks/useXrpLedgerHook";
 
 import "antd/dist/reset.css";
 
@@ -16,6 +16,15 @@ import "../styles/uno.css";
 function MyApp({ Component, pageProps }: AppProps) {
   const [network, setNetwork] = useState(DEFAULT_CTX_VALUE.network);
   const [client, setClient] = useState<Client>();
+  const [wallet, setWallet] = useState<Wallet>();
+
+  useEffect(() => {
+    if (typeof localStorage.getItem("__wallet_seed__") === "string") {
+      setWallet(
+        Wallet.fromSeed(localStorage.getItem("__wallet_seed__") as string)
+      );
+    }
+  }, []);
 
   useEffect(() => {
     const _client = new Client(network);
@@ -34,10 +43,12 @@ function MyApp({ Component, pageProps }: AppProps) {
   const ctx = useMemo(() => {
     return {
       client,
+      wallet,
       network,
       setNetwork,
+      setWallet,
     };
-  }, [client, network]);
+  }, [client, wallet, network]);
 
   return client ? (
     <XrpLedgerClientProvider.Provider value={ctx}>
