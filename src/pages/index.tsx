@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CheckOutlined } from "@ant-design/icons";
 import {
   Select,
@@ -11,7 +11,12 @@ import {
 } from "antd";
 import { UserOutlined } from "@ant-design/icons";
 import Image from "next/image";
-import { Wallet, AccountInfoResponse, dropsToXrp } from "xrpl";
+import {
+  Wallet,
+  AccountInfoResponse,
+  dropsToXrp,
+  TransactionStream,
+} from "xrpl";
 import { useRouter } from "next/router";
 
 import {
@@ -28,12 +33,7 @@ export default function Home() {
   const { client, network, setNetwork } = useXrpLedgerClient();
   const { wallet, wallets, setWallet } = useXrpLedgerWallet();
 
-  useEffect(() => {
-    if (!wallet) {
-      router.push("/create");
-      return;
-    }
-
+  const syncAccountInfo = useCallback(() => {
     client
       .request({
         command: "account_info",
@@ -43,7 +43,36 @@ export default function Home() {
       .then(({ result }) => {
         setAccount(result.account_data);
       });
-  }, [client, router, wallet]);
+  }, [client, wallet]);
+
+  useEffect(() => {
+    if (!wallet) {
+      router.push("/create");
+      return;
+    }
+
+    syncAccountInfo();
+  }, [client, router, syncAccountInfo, wallet]);
+
+  useEffect(() => {
+    const handler = async (ts: TransactionStream) => {
+      syncAccountInfo();
+    };
+
+    client.request({
+      command: "subscribe",
+      accounts: wallets.map((wallet) => wallet.address),
+    });
+    client.on("transaction", handler);
+
+    return () => {
+      client.request({
+        command: "unsubscribe",
+        accounts: wallets.map((wallet) => wallet.address),
+      });
+      client.off("transaction", handler);
+    };
+  }, [client, wallets, syncAccountInfo]);
 
   return (
     <div className="w-1000px mx-auto">
