@@ -16,6 +16,8 @@ import {
   AccountInfoResponse,
   dropsToXrp,
   TransactionStream,
+  AccountTxResponse,
+  Payment,
 } from "xrpl";
 import { useRouter } from "next/router";
 
@@ -32,6 +34,9 @@ export default function Home() {
 
   const { client, network, setNetwork } = useXrpLedgerClient();
   const { wallet, wallets, setWallet } = useXrpLedgerWallet();
+  const [txHistory, setTxHistory] = useState<
+    AccountTxResponse["result"]["transactions"]
+  >([]);
 
   const syncAccountInfo = useCallback(() => {
     client
@@ -45,6 +50,18 @@ export default function Home() {
       });
   }, [client, wallet]);
 
+  const syncAccountTxHistory = useCallback(() => {
+    client
+      .request({
+        command: "account_tx",
+        account: wallet.address,
+      })
+      .then((res) => {
+        setTxHistory(res.result.transactions);
+      });
+  }, [client, wallet]);
+
+  // init logic when comp is mounted
   useEffect(() => {
     if (!wallet) {
       router.push("/create");
@@ -55,8 +72,14 @@ export default function Home() {
   }, [client, router, syncAccountInfo, wallet]);
 
   useEffect(() => {
+    syncAccountTxHistory();
+  }, [syncAccountTxHistory]);
+
+  // real-time subscription
+  useEffect(() => {
     const handler = async (ts: TransactionStream) => {
       syncAccountInfo();
+      syncAccountTxHistory();
     };
 
     client.request({
@@ -72,7 +95,7 @@ export default function Home() {
       });
       client.off("transaction", handler);
     };
-  }, [client, wallets, syncAccountInfo]);
+  }, [client, wallets, syncAccountInfo, syncAccountTxHistory]);
 
   return (
     <div className="w-1000px mx-auto">
@@ -162,6 +185,36 @@ export default function Home() {
         <Divider />
         <div className="flex flex-col items-center">
           <Typography.Title level={4}>History</Typography.Title>
+          <div className="w-full max-h-500px overflow-y-auto ">
+            {txHistory.map(({ tx }) => {
+              const isRecipient =
+                (tx as Payment).Destination === wallet.address;
+
+              return (
+                <div
+                  className="px-4 py-2 border-b-1 border-b-#d6d9dc border-b-solid"
+                  key={tx?.hash}
+                >
+                  <div className="flex">
+                    <span className="mr-2">
+                      {isRecipient ? "Received" : "Sent"}:
+                    </span>
+                    <span className="flex-auto"></span>
+                    <Typography.Text>
+                      {dropsToXrp((tx as Payment).Amount.toString())} XRP
+                    </Typography.Text>
+                  </div>
+                  <div className="flex">
+                    <span className="mr-2">Tx Hash:</span>
+                    <span className="flex-auto"></span>
+                    <Typography.Text copyable={{ text: tx?.hash }}>
+                      {tx?.hash}
+                    </Typography.Text>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
