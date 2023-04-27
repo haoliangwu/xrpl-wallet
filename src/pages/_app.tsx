@@ -41,7 +41,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   return client ? (
     <XrpLedgerClientProvider.Provider value={ctx}>
-      <Component {...pageProps} />;
+      <Component {...pageProps} />
     </XrpLedgerClientProvider.Provider>
   ) : (
     <div className="py-45vh text-center">

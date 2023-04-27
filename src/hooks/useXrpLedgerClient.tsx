@@ -9,10 +9,14 @@ import { Client } from "xrpl";
 
 let client: Client;
 
-export const DEFAULT_CTX_VALUE = {
+export const DEFAULT_CTX_VALUE: {
+  client?: Client;
+  network: string;
+  setNetwork: Dispatch<SetStateAction<string>>;
+} = {
   network: "wss://s.altnet.rippletest.net:51233",
   setNetwork: () => {},
-}
+};
 
 export const XrpLedgerClientProvider = createContext<{
   client?: Client;

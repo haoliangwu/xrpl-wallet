@@ -3,11 +3,16 @@ import { Select, Avatar, Typography, Divider } from "antd";
 import { UserOutlined } from "@ant-design/icons";
 import Image from "next/image";
 import { Client, Wallet, AccountInfoResponse } from "xrpl";
+import { useRouter } from "next/router";
 
 import { dropsToXRP } from "~/utils";
 import useXrpLedgerClient from "~/hooks/useXrpLedgerClient";
 
 export default function Home() {
+  const router = useRouter();
+  const [seed] = useState<string>(
+    () => localStorage.getItem("__wallet_seed__") ?? ""
+  );
   const [wallet, setWallet] = useState<Wallet>();
   const [account, setAccount] =
     useState<AccountInfoResponse["result"]["account_data"]>();
@@ -15,7 +20,9 @@ export default function Home() {
   const { client, network, setNetwork } = useXrpLedgerClient();
 
   useEffect(() => {
-    const test_wallet = Wallet.fromSeed("sEdT7qpzFkk4sA39c2XavMp3FkSvA2A");
+    if (!seed) router.push("/create");
+
+    const test_wallet = Wallet.fromSeed(seed);
 
     setWallet(test_wallet);
 
@@ -28,7 +35,7 @@ export default function Home() {
       .then(({ result }) => {
         setAccount(result.account_data);
       });
-  }, [client]);
+  }, [client, seed, router]);
 
   return (
     <div className="w-1000px mx-auto">
