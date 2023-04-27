@@ -15,6 +15,8 @@
     "@types/react": "18.2.0",
     "@types/react-dom": "18.2.1",
     "@unocss/cli": "^0.51.8",
+    "antd": "^5.4.6",
+    "bignumber.js": "^9.1.1",
     "eslint": "8.39.0",
     "eslint-config-next": "13.3.1",
     "next": "13.3.1",
