@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { AppProps } from "next/app";
 import { Client, Wallet } from "xrpl";
 import { Spin } from "antd";
+import { useRouter } from "next/router";
 
 import {
   XrpLedgerClientProvider,
@@ -15,6 +16,7 @@ import "../styles/globals.css";
 import "../styles/uno.css";
 
 function MyApp({ Component, pageProps }: AppProps) {
+  const router = useRouter();
   const [network, setNetwork] = useState(DEFAULT_CTX_VALUE.network);
   const [client, setClient] = useState<Client>();
   const [wallets, setWallets] = useState<Wallet[]>([]);
@@ -30,8 +32,10 @@ function MyApp({ Component, pageProps }: AppProps) {
 
       setWallet(wallets[0]);
       setWallets(wallets);
+    } else {
+      router.push("/create");
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     const _client = new Client(network);
