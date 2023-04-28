@@ -1,7 +1,7 @@
 import { Button, Form, Input, InputNumber, message } from "antd";
 import { useRouter } from "next/router";
 import { useState } from "react";
-import { Payment, TxResponse, dropsToXrp, xrpToDrops } from "xrpl";
+import { Client, Payment, TxResponse, dropsToXrp, xrpToDrops } from "xrpl";
 import {
   useXrpLedgerClient,
   useXrpLedgerWallet,
@@ -28,40 +28,48 @@ export default function SendTx() {
           wrapperCol={{ span: 16 }}
           onFinish={async (values) => {
             setLoading(true);
+
             client
-              .autofill({
-                TransactionType: "Payment",
-                Account: wallet?.address,
-                Amount: xrpToDrops(values.qty),
-                Destination: values.address,
-              })
-              .then((prepared: Payment) => {
-                const max_ledger = prepared.LastLedgerSequence;
-                console.log("Prepared transaction instructions:", prepared);
-                console.log(
-                  "Transaction cost:",
-                  dropsToXrp(prepared.Fee!),
-                  "XRP"
-                );
-                console.log("Transaction expires after ledger:", max_ledger);
+              .ap(
+                wallet.map(
+                  (w) => (c: Client) =>
+                    c
+                      .autofill({
+                        TransactionType: "Payment",
+                        Account: w.address,
+                        Amount: xrpToDrops(values.qty),
+                        Destination: values.address,
+                      })
+                      .then((prepared: Payment) => {
+                        const max_ledger = prepared.LastLedgerSequence;
+                        console.log(
+                          "Prepared transaction instructions:",
+                          prepared
+                        );
+                        console.log(
+                          "Transaction cost:",
+                          dropsToXrp(prepared.Fee!),
+                          "XRP"
+                        );
+                        console.log(
+                          "Transaction expires after ledger:",
+                          max_ledger
+                        );
 
-                if (wallet) {
-                  const signed = wallet.sign(prepared);
+                        return c.submitAndWait(w.sign(prepared).tx_blob);
+                      })
+                )
+              )
+              .forEach((defer) => {
+                defer
+                  .then((res: TxResponse) => {
+                    message.success(`TX ${res.id} Confirmed`);
 
-                  return client.submitAndWait(signed.tx_blob);
-                } else {
-                  return Promise.reject(
-                    new Error("sending tx needs a valid wallet instance")
-                  );
-                }
-              })
-              .then((res: TxResponse) => {
-                message.success(`TX ${res.id} Confirmed`);
-
-                router.push("/");
-              })
-              .finally(() => {
-                setLoading(false);
+                    router.push("/");
+                  })
+                  .finally(() => {
+                    setLoading(false);
+                  });
               });
           }}
           onFinishFailed={onFinishFailed}

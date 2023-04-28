@@ -79,11 +79,8 @@ export default function Home() {
   // init logic when comp is mounted
   useEffect(() => {
     syncAccountInfo();
-  }, [client, router, syncAccountInfo, wallet]);
-
-  useEffect(() => {
     syncAccountTxHistory();
-  }, [syncAccountTxHistory]);
+  }, [client, router, syncAccountInfo, syncAccountTxHistory]);
 
   // real-time subscription
   useEffect(() => {
