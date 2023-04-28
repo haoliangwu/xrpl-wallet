@@ -77,6 +77,12 @@ export default function NFT() {
                     Memos: [
                       {
                         Memo: {
+                          MemoType: hexEncode(encodeURI("name")),
+                          MemoData: hexEncode(encodeURI(values.name)),
+                        },
+                      },
+                      {
+                        Memo: {
                           MemoType: hexEncode(encodeURI("mimetype")),
                           MemoData: hexEncode(encodeURI(attachment.type)),
                         },
@@ -105,10 +111,10 @@ export default function NFT() {
       >
         <Form.Item
           label="Name"
-          name="address"
+          name="name"
           rules={[{ required: true, message: "Please input the NFT name!" }]}
         >
-          <Input placeholder="rEJfLEEDvrdGwK8gszQa9bL2TYd8Cek5Fp" />
+          <Input placeholder="NFT Name" />
         </Form.Item>
         <Form.Item
           label="Attachment"
