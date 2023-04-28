@@ -13,7 +13,7 @@ export default function Create() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const { client } = useXrpLedgerClient();
-  const { setWallets } = useContext(XrpLedgerClientProvider);
+  const { setWallet: setContextWallet, setWallets } = useContext(XrpLedgerClientProvider);
   const [wallet, setWallet] = useState<Wallet>();
 
   return (
@@ -85,6 +85,7 @@ export default function Create() {
                   const wallets = seeds.map((seed) => Wallet.fromSeed(seed));
 
                   setWallets(wallets);
+                  setContextWallet(wallets[0])
                 })
                 .finally(() => {
                   setLoading(false);
