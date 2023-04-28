@@ -1,19 +1,19 @@
 import { Button, Result, Typography } from "antd";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Wallet } from "xrpl";
 
 import { LS_KEY } from "~/consts";
 import {
+  XrpLedgerClientProvider,
   useXrpLedgerClient,
-  useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
 
 export default function Create() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const { client } = useXrpLedgerClient();
-  const { setWallets } = useXrpLedgerWallet();
+  const { setWallets } = useContext(XrpLedgerClientProvider);
   const [wallet, setWallet] = useState<Wallet>();
 
   return (
