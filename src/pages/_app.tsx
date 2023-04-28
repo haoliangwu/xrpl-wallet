@@ -3,6 +3,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { CheckOutlined, UserOutlined } from "@ant-design/icons";
@@ -11,6 +12,7 @@ import { Client, Wallet } from "xrpl";
 import { Avatar, Dropdown, Select, Spin } from "antd";
 import { useRouter } from "next/router";
 import { Maybe } from "monet";
+import { IPFS, create } from "ipfs-core";
 
 import { XrpLedgerContext, DEFAULT_CTX_VALUE } from "~/hooks/useXrpLedgerHook";
 import { LS_KEY } from "~/consts";
@@ -91,7 +93,9 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
           </Dropdown>
         </div>
       </div>
-      <div className="relative bg-#ffffff px-8 py-6 rounded-8px">{children}</div>
+      <div className="relative bg-#ffffff px-8 py-6 rounded-8px">
+        {children}
+      </div>
     </div>
   );
 };
@@ -99,6 +103,7 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [network, setNetwork] = useState(DEFAULT_CTX_VALUE.network);
+  const [ipfs, setIpfs] = useState<Maybe<IPFS>>(Maybe.None());
   const [client, setClient] = useState<Maybe<Client>>(Maybe.None());
   const [wallet, setWallet] = useState<Maybe<Wallet>>(Maybe.None());
   const [wallets, setWallets] = useState<Wallet[]>([]);
@@ -130,8 +135,21 @@ function MyApp({ Component, pageProps }: AppProps) {
     };
   }, [network]);
 
+  const initIpfsOnce = useRef(false);
+
+  useEffect(() => {
+    if (ipfs.isSome() || initIpfsOnce.current) return;
+
+    initIpfsOnce.current = true;
+
+    create().then((ipfs) => {
+      setIpfs(Maybe.Some(ipfs));
+    });
+  }, [ipfs]);
+
   const ctx = useMemo(() => {
     return {
+      ipfs,
       client,
       wallet,
       wallets,
@@ -140,7 +158,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       setWallet,
       setWallets,
     };
-  }, [client, wallet, wallets, network]);
+  }, [ipfs, client, wallet, wallets, network]);
 
   // @ts-ignore
   const getLayout = Component.getLayout;

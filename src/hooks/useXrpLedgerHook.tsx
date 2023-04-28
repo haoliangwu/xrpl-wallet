@@ -2,10 +2,12 @@ import { useRouter } from "next/router";
 import { Dispatch, SetStateAction, createContext, useContext } from "react";
 import { Client, Wallet } from "xrpl";
 import { Maybe } from "monet";
+import { IPFS } from "ipfs-core";
 
 let client: Client;
 
 interface XrpLedgerContext {
+  ipfs: Maybe<IPFS>;
   client: Maybe<Client>;
   wallet: Maybe<Wallet>;
   wallets: Wallet[];
@@ -16,6 +18,7 @@ interface XrpLedgerContext {
 }
 
 export const DEFAULT_CTX_VALUE: XrpLedgerContext = {
+  ipfs: Maybe.None(),
   client: Maybe.None(),
   wallet: Maybe.None(),
   network: "wss://s.altnet.rippletest.net:51233",
@@ -39,15 +42,21 @@ export function useXrpLedgerClient() {
 }
 
 export function useXrpLedgerWallet() {
-  const router = useRouter();
-  const { wallet, wallets, setWallet, setWallets } = useContext(
-    XrpLedgerContext
-  );
+  const { wallet, wallets, setWallet, setWallets } =
+    useContext(XrpLedgerContext);
 
   return {
     wallet,
     wallets,
     setWallet,
     setWallets,
+  };
+}
+
+export function useIPFS() {
+  const { ipfs } = useContext(XrpLedgerContext);
+
+  return {
+    ipfs,
   };
 }

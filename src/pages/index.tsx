@@ -11,12 +11,13 @@ import {
 } from "xrpl";
 import { useRouter } from "next/router";
 import { Maybe } from "monet";
+import Link from "next/link";
 
 import {
   useXrpLedgerClient,
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
-import Link from "next/link";
+import { hexDecode } from "~/utils";
 
 export default function Home() {
   const router = useRouter();
@@ -151,16 +152,22 @@ export default function Home() {
                   key={tx?.hash}
                 >
                   <div className="flex">
-                    <span className="mr-2">
-                      {isRecipient ? "Received" : "Sent"}:
-                    </span>
+                    <span className="mr-2">{tx?.TransactionType}</span>
                     <span className="flex-auto"></span>
-                    <Typography.Text>
-                      {dropsToXrp((tx as Payment).Amount.toString())} XRP
-                    </Typography.Text>
+                    {tx?.TransactionType === "Payment" && (
+                      <Typography.Text>
+                        {dropsToXrp(tx.Amount.toString())} XRP (
+                        {isRecipient ? "Received" : "Sent"})
+                      </Typography.Text>
+                    )}
+                    {tx?.TransactionType === "NFTokenMint" && (
+                      <Typography.Text copyable>
+                        {hexDecode(tx.URI ?? "-")}
+                      </Typography.Text>
+                    )}
                   </div>
                   <div className="flex">
-                    <span className="mr-2">Tx Hash:</span>
+                    <span className="mr-2">Tx Hash</span>
                     <span className="flex-auto"></span>
                     <Typography.Text copyable={{ text: tx?.hash }}>
                       {tx?.hash}
