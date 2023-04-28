@@ -13,6 +13,11 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@chainsafe/libp2p-noise": "^11.0.2",
+    "@chainsafe/libp2p-yamux": "^3.0.7",
+    "@helia/unixfs": "^1.2.2",
+    "@libp2p/bootstrap": "^6.0.3",
+    "@libp2p/websockets": "^5.0.7",
     "@types/node": "18.16.1",
     "@types/react": "18.2.0",
     "@types/react-dom": "18.2.1",
@@ -21,7 +26,8 @@
     "bignumber.js": "^9.1.1",
     "eslint": "8.39.0",
     "eslint-config-next": "13.3.1",
-    "ipfs-core": "^0.18.0",
+    "helia": "^1.0.3",
+    "libp2p": "^0.43.3",
     "monet": "^0.9.3",
     "next": "13.3.1",
     "react": "18.2.0",

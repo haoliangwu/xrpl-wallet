@@ -12,10 +12,12 @@ import { Client, Wallet } from "xrpl";
 import { Avatar, Dropdown, Select, Spin } from "antd";
 import { useRouter } from "next/router";
 import { Maybe } from "monet";
-import { IPFS, create } from "ipfs-core";
+import { createHelia } from "helia";
+import { Helia } from "@helia/interface";
 
 import { XrpLedgerContext, DEFAULT_CTX_VALUE } from "~/hooks/useXrpLedgerHook";
 import { LS_KEY } from "~/consts";
+import { createHeliaNode } from "~/utils/ipfs";
 
 import "antd/dist/reset.css";
 
@@ -103,7 +105,7 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [network, setNetwork] = useState(DEFAULT_CTX_VALUE.network);
-  const [ipfs, setIpfs] = useState<Maybe<IPFS>>(Maybe.None());
+  const [helia, setHelia] = useState<Maybe<Helia>>(Maybe.None());
   const [client, setClient] = useState<Maybe<Client>>(Maybe.None());
   const [wallet, setWallet] = useState<Maybe<Wallet>>(Maybe.None());
   const [wallets, setWallets] = useState<Wallet[]>([]);
@@ -135,21 +137,21 @@ function MyApp({ Component, pageProps }: AppProps) {
     };
   }, [network]);
 
-  const initIpfsOnce = useRef(false);
+  const initHeliaOnce = useRef(false);
 
   useEffect(() => {
-    if (ipfs.isSome() || initIpfsOnce.current) return;
+    if (helia.isSome() || initHeliaOnce.current) return;
 
-    initIpfsOnce.current = true;
+    initHeliaOnce.current = true;
 
-    create().then((ipfs) => {
-      setIpfs(Maybe.Some(ipfs));
+    createHeliaNode().then((helia) => {
+      setHelia(Maybe.Some(helia));
     });
-  }, [ipfs]);
+  }, [helia]);
 
   const ctx = useMemo(() => {
     return {
-      ipfs,
+      helia,
       client,
       wallet,
       wallets,
@@ -158,7 +160,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       setWallet,
       setWallets,
     };
-  }, [ipfs, client, wallet, wallets, network]);
+  }, [helia, client, wallet, wallets, network]);
 
   // @ts-ignore
   const getLayout = Component.getLayout;

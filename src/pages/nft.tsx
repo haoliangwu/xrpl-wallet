@@ -18,10 +18,11 @@ import {
   dropsToXrp,
   xrpToDrops,
 } from "xrpl";
-import { IPFS } from "ipfs-core";
+import { unixfs, UnixFS } from "@helia/unixfs";
+import { Helia } from "@helia/interface";
 
 import {
-  useIPFS,
+  useHelia,
   useXrpLedgerClient,
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
@@ -43,7 +44,7 @@ export default function NFT() {
   const [loading, setLoading] = useState(false);
   const { client } = useXrpLedgerClient();
   const { wallet } = useXrpLedgerWallet();
-  const { ipfs } = useIPFS();
+  const { helia } = useHelia();
 
   return (
     <div>
@@ -60,36 +61,46 @@ export default function NFT() {
           setLoading(true);
 
           wallet
-            .map((w) => (c: Client) => (ipfs: IPFS) => {
+            .map((w) => (c: Client) => (fs: UnixFS) => {
               const attachment = values.attachment[0];
               const taxon = generateNFTokenTaxon();
 
-              return ipfs.add(attachment.originFileObj).then(({ cid }) => {
-                return c
-                  .autofill({
-                    TransactionType: "NFTokenMint",
-                    NFTokenTaxon: taxon,
-                    Account: w.address,
-                    // todo: need to bind NFTokenMinter to AccountRoot
-                    // Issuer: w.address,
-                    Flags: NFTokenMintFlags.tfTransferable,
-                    URI: hexEncode(cid.toString()),
-                    Memos: [
-                      {
-                        Memo: {
-                          MemoType: hexEncode(encodeURI("mimetype")),
-                          MemoData: hexEncode(encodeURI(attachment.type)),
+              return (attachment.originFileObj as File)
+                .arrayBuffer()
+                .then((buffer) => new Uint8Array(buffer))
+                .then((bytes) => fs.addBytes(bytes))
+                .then((cid) => {
+                  return c
+                    .autofill({
+                      TransactionType: "NFTokenMint",
+                      NFTokenTaxon: taxon,
+                      Account: w.address,
+                      // todo: need to bind NFTokenMinter to AccountRoot
+                      // Issuer: w.address,
+                      Flags: NFTokenMintFlags.tfTransferable,
+                      URI: hexEncode(cid.toString()),
+                      Memos: [
+                        {
+                          Memo: {
+                            MemoType: hexEncode(encodeURI("filename")),
+                            MemoData: hexEncode(encodeURI(values.name)),
+                          },
                         },
-                      },
-                    ],
-                  })
-                  .then((prepared) => {
-                    return c.submitAndWait(w.sign(prepared).tx_blob);
-                  });
-              });
+                        {
+                          Memo: {
+                            MemoType: hexEncode(encodeURI("mimetype")),
+                            MemoData: hexEncode(encodeURI(attachment.type)),
+                          },
+                        },
+                      ],
+                    })
+                    .then((prepared) => {
+                      return c.submitAndWait(w.sign(prepared).tx_blob);
+                    });
+                });
             })
             .apTo(client)
-            .apTo(ipfs)
+            .apTo(helia.map((h) => unixfs(h)))
             .forEach((defer) => {
               defer
                 .then((res: TxResponse) => {
@@ -105,10 +116,10 @@ export default function NFT() {
       >
         <Form.Item
           label="Name"
-          name="address"
+          name="name"
           rules={[{ required: true, message: "Please input the NFT name!" }]}
         >
-          <Input placeholder="rEJfLEEDvrdGwK8gszQa9bL2TYd8Cek5Fp" />
+          <Input placeholder="NTF Name" />
         </Form.Item>
         <Form.Item
           label="Attachment"
