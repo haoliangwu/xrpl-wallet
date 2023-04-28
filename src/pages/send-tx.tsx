@@ -29,37 +29,36 @@ export default function SendTx() {
           onFinish={async (values) => {
             setLoading(true);
 
-            client
-              .ap(
-                wallet.map(
-                  (w) => (c: Client) =>
-                    c
-                      .autofill({
-                        TransactionType: "Payment",
-                        Account: w.address,
-                        Amount: xrpToDrops(values.qty),
-                        Destination: values.address,
-                      })
-                      .then((prepared: Payment) => {
-                        const max_ledger = prepared.LastLedgerSequence;
-                        console.log(
-                          "Prepared transaction instructions:",
-                          prepared
-                        );
-                        console.log(
-                          "Transaction cost:",
-                          dropsToXrp(prepared.Fee!),
-                          "XRP"
-                        );
-                        console.log(
-                          "Transaction expires after ledger:",
-                          max_ledger
-                        );
+            wallet
+              .map(
+                (w) => (c: Client) =>
+                  c
+                    .autofill({
+                      TransactionType: "Payment",
+                      Account: w.address,
+                      Amount: xrpToDrops(values.qty),
+                      Destination: values.address,
+                    })
+                    .then((prepared: Payment) => {
+                      const max_ledger = prepared.LastLedgerSequence;
+                      console.log(
+                        "Prepared transaction instructions:",
+                        prepared
+                      );
+                      console.log(
+                        "Transaction cost:",
+                        dropsToXrp(prepared.Fee!),
+                        "XRP"
+                      );
+                      console.log(
+                        "Transaction expires after ledger:",
+                        max_ledger
+                      );
 
-                        return c.submitAndWait(w.sign(prepared).tx_blob);
-                      })
-                )
+                      return c.submitAndWait(w.sign(prepared).tx_blob);
+                    })
               )
+              .apTo(client)
               .forEach((defer) => {
                 defer
                   .then((res: TxResponse) => {

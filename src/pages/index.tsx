@@ -40,17 +40,16 @@ export default function Home() {
   >([]);
 
   const syncAccountInfo = useCallback(() => {
-    client
-      .ap(
-        wallet.map(
-          (w) => (c: Client) =>
-            c.request({
-              command: "account_info",
-              account: w.address,
-              ledger_index: "validated",
-            })
-        )
+    wallet
+      .map(
+        (w) => (c: Client) =>
+          c.request({
+            command: "account_info",
+            account: w.address,
+            ledger_index: "validated",
+          })
       )
+      .apTo(client)
       .forEach((defer) => {
         defer.then(({ result }) => {
           setAccount(result.account_data);
@@ -59,16 +58,15 @@ export default function Home() {
   }, [client, wallet]);
 
   const syncAccountTxHistory = useCallback(() => {
-    client
-      .ap(
-        wallet.map(
-          (w) => (c: Client) =>
-            c.request({
-              command: "account_tx",
-              account: w.address,
-            })
-        )
+    wallet
+      .map(
+        (w) => (c: Client) =>
+          c.request({
+            command: "account_tx",
+            account: w.address,
+          })
       )
+      .apTo(client)
       .forEach((defer) => {
         defer.then((res) => {
           setTxHistory(res.result.transactions);
