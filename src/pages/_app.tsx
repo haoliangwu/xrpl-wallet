@@ -3,6 +3,7 @@ import type { AppProps } from "next/app";
 import { Client, Wallet } from "xrpl";
 import { Spin } from "antd";
 import { useRouter } from "next/router";
+import { Maybe } from "monet";
 
 import {
   XrpLedgerClientProvider,
@@ -18,9 +19,9 @@ import "../styles/uno.css";
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [network, setNetwork] = useState(DEFAULT_CTX_VALUE.network);
-  const [client, setClient] = useState<Client>();
+  const [client, setClient] = useState<Maybe<Client>>(Maybe.None());
+  const [wallet, setWallet] = useState<Maybe<Wallet>>(Maybe.None());
   const [wallets, setWallets] = useState<Wallet[]>([]);
-  const [wallet, setWallet] = useState<Wallet>();
 
   useEffect(() => {
     if (typeof localStorage.getItem(LS_KEY.WALLET_SEEDS) === "string") {
@@ -30,10 +31,8 @@ function MyApp({ Component, pageProps }: AppProps) {
 
       const wallets = seeds.map((seed) => Wallet.fromSeed(seed));
 
-      setWallet(wallets[0]);
+      setWallet(Maybe.Some(wallets[0]));
       setWallets(wallets);
-    } else {
-      router.push("/create");
     }
   }, [router]);
 
@@ -41,12 +40,12 @@ function MyApp({ Component, pageProps }: AppProps) {
     const _client = new Client(network);
 
     _client.connect().then(() => {
-      setClient(_client);
+      setClient(Maybe.Some(_client));
     });
 
     return () => {
       _client.disconnect().then(() => {
-        setClient(undefined);
+        setClient(Maybe.None());
       });
     };
   }, [network]);
@@ -63,13 +62,15 @@ function MyApp({ Component, pageProps }: AppProps) {
     };
   }, [client, wallet, wallets, network]);
 
-  return client ? (
+  return client.isSome() ? (
     <XrpLedgerClientProvider.Provider value={ctx}>
       <Component {...pageProps} />
     </XrpLedgerClientProvider.Provider>
   ) : (
-    <div className="py-45vh text-center">
-      <Spin className="m-auto" />
+    <div className="relative w-100vw h-100vh">
+      <div className="absolute top-50% left-50% transform translate-x-[-50%] translate-y-[-50%]">
+        <Spin className="m-auto" />
+      </div>
     </div>
   );
 }

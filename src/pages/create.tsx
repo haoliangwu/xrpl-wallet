@@ -1,7 +1,8 @@
-import { Button, Result, Typography } from "antd";
+import { Button, Result, Typography, Spin } from "antd";
 import { useRouter } from "next/router";
-import { useContext, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { Wallet } from "xrpl";
+import { Maybe } from "monet";
 
 import { LS_KEY } from "~/consts";
 import {
@@ -13,8 +14,40 @@ export default function Create() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const { client } = useXrpLedgerClient();
-  const { setWallet: setContextWallet, setWallets } = useContext(XrpLedgerClientProvider);
+  const { setWallet: setContextWallet, setWallets } = useContext(
+    XrpLedgerClientProvider
+  );
   const [wallet, setWallet] = useState<Wallet>();
+
+  const generateWallet = useCallback(() => {
+    setLoading(true);
+    client.forEach((c) => {
+      c.fundWallet()
+        .then((res) => {
+          setWallet(res.wallet);
+
+          const seeds = JSON.parse(
+            localStorage.getItem(LS_KEY.WALLET_SEEDS) ?? "[]"
+          ) as Array<string>;
+
+          seeds.push(res.wallet.seed as string);
+
+          localStorage.setItem(LS_KEY.WALLET_SEEDS, JSON.stringify(seeds));
+
+          const wallets = seeds.map((seed) => Wallet.fromSeed(seed));
+
+          setWallets(wallets);
+          setContextWallet(Maybe.Some(wallets[0]));
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    });
+  }, [client, setContextWallet, setWallets]);
+
+  useEffect(() => {
+    generateWallet();
+  }, [generateWallet]);
 
   return (
     <div className="relative w-100vw h-100vh">
@@ -61,39 +94,11 @@ export default function Create() {
             ]}
           />
         ) : (
-          <Button
-            type="primary"
-            loading={loading}
-            onClick={() => {
-              setLoading(true);
-              client
-                .fundWallet()
-                .then((res) => {
-                  setWallet(res.wallet);
-
-                  const seeds = JSON.parse(
-                    localStorage.getItem(LS_KEY.WALLET_SEEDS) ?? "[]"
-                  ) as Array<string>;
-
-                  seeds.push(res.wallet.seed as string);
-
-                  localStorage.setItem(
-                    LS_KEY.WALLET_SEEDS,
-                    JSON.stringify(seeds)
-                  );
-
-                  const wallets = seeds.map((seed) => Wallet.fromSeed(seed));
-
-                  setWallets(wallets);
-                  setContextWallet(wallets[0])
-                })
-                .finally(() => {
-                  setLoading(false);
-                });
-            }}
-          >
-            Generate XRP Ledger Account
-          </Button>
+          <div className="relative w-100vw h-100vh">
+            <div className="absolute top-50% left-50% transform translate-x-[-50%] translate-y-[-50%]">
+              <Spin className="m-auto" tip="You're almost there..." />
+            </div>
+          </div>
         )}
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { CheckOutlined } from "@ant-design/icons";
+import { CheckOutlined, SmileOutlined } from "@ant-design/icons";
 import {
   Select,
   Avatar,
@@ -7,19 +7,20 @@ import {
   Divider,
   Button,
   Dropdown,
-  MenuProps,
+  Result,
 } from "antd";
 import { UserOutlined } from "@ant-design/icons";
 import Image from "next/image";
 import {
-  Wallet,
   AccountInfoResponse,
   dropsToXrp,
   TransactionStream,
   AccountTxResponse,
   Payment,
+  Client,
 } from "xrpl";
 import { useRouter } from "next/router";
+import { Maybe } from "monet";
 
 import {
   useXrpLedgerClient,
@@ -40,34 +41,43 @@ export default function Home() {
 
   const syncAccountInfo = useCallback(() => {
     client
-      .request({
-        command: "account_info",
-        account: wallet.address,
-        ledger_index: "validated",
-      })
-      .then(({ result }) => {
-        setAccount(result.account_data);
+      .ap(
+        wallet.map(
+          (w) => (c: Client) =>
+            c.request({
+              command: "account_info",
+              account: w.address,
+              ledger_index: "validated",
+            })
+        )
+      )
+      .forEach((defer) => {
+        defer.then(({ result }) => {
+          setAccount(result.account_data);
+        });
       });
   }, [client, wallet]);
 
   const syncAccountTxHistory = useCallback(() => {
     client
-      .request({
-        command: "account_tx",
-        account: wallet.address,
-      })
-      .then((res) => {
-        setTxHistory(res.result.transactions);
+      .ap(
+        wallet.map(
+          (w) => (c: Client) =>
+            c.request({
+              command: "account_tx",
+              account: w.address,
+            })
+        )
+      )
+      .forEach((defer) => {
+        defer.then((res) => {
+          setTxHistory(res.result.transactions);
+        });
       });
   }, [client, wallet]);
 
   // init logic when comp is mounted
   useEffect(() => {
-    if (!wallet) {
-      router.push("/create");
-      return;
-    }
-
     syncAccountInfo();
   }, [client, router, syncAccountInfo, wallet]);
 
@@ -77,27 +87,33 @@ export default function Home() {
 
   // real-time subscription
   useEffect(() => {
+    if (wallets.length <= 0) return;
+
     const handler = async (ts: TransactionStream) => {
       syncAccountInfo();
       syncAccountTxHistory();
     };
 
-    client.request({
-      command: "subscribe",
-      accounts: wallets.map((wallet) => wallet.address),
-    });
-    client.on("transaction", handler);
-
-    return () => {
-      client.request({
-        command: "unsubscribe",
+    client.forEach((c) => {
+      c.request({
+        command: "subscribe",
         accounts: wallets.map((wallet) => wallet.address),
       });
-      client.off("transaction", handler);
+      c.on("transaction", handler);
+    });
+
+    return () => {
+      client.forEach((c) => {
+        c.request({
+          command: "unsubscribe",
+          accounts: wallets.map((wallet) => wallet.address),
+        });
+        c.off("transaction", handler);
+      });
     };
   }, [client, wallets, syncAccountInfo, syncAccountTxHistory]);
 
-  return (
+  return wallet.isSome() ? (
     <div className="w-1000px mx-auto">
       <div className="h-80px flex items-center gap-4">
         <Image
@@ -129,14 +145,17 @@ export default function Home() {
             menu={{
               items: [
                 ...wallets.map((_wallet, idx) => {
-                  const isActive = _wallet.address === wallet.address;
+                  const isActive = wallet.every(
+                    (w) => w.address === _wallet.address
+                  );
+
                   return {
                     key: _wallet.address,
                     label: (
                       <div
                         className="flex items-center"
                         onClick={() => {
-                          setWallet(_wallet);
+                          setWallet(Maybe.Some(_wallet));
                         }}
                       >
                         <span className="flex-auto">Account {idx + 1}</span>
@@ -162,7 +181,12 @@ export default function Home() {
       <div className="bg-#ffffff p-4">
         <div className="h-64px text-center">
           <Typography.Title level={4}>Address</Typography.Title>
-          <Typography.Text copyable>{wallet?.address}</Typography.Text>
+          <Typography.Text copyable>
+            {wallet.cata(
+              () => "-",
+              (w) => w.address
+            )}
+          </Typography.Text>
         </div>
         <Divider />
         <div className="flex flex-col items-center">
@@ -187,8 +211,9 @@ export default function Home() {
           <Typography.Title level={4}>History</Typography.Title>
           <div className="w-full max-h-500px overflow-y-auto ">
             {txHistory.map(({ tx }) => {
-              const isRecipient =
-                (tx as Payment).Destination === wallet.address;
+              const isRecipient = wallet.every(
+                (w) => w.address === (tx as Payment).Destination
+              );
 
               return (
                 <div
@@ -216,6 +241,20 @@ export default function Home() {
             })}
           </div>
         </div>
+      </div>
+    </div>
+  ) : (
+    <div className="relative w-100vw h-100vh">
+      <div className="absolute top-50% left-50% transform translate-x-[-50%] translate-y-[-50%]">
+        <Result
+          icon={<SmileOutlined />}
+          title="Oops, it seems you don't have account yet!"
+          extra={
+            <Button type="primary" onClick={() => router.push("/create")}>
+              Create
+            </Button>
+          }
+        />
       </div>
     </div>
   );
