@@ -6,7 +6,7 @@ import { Maybe } from "monet";
 
 import { LS_KEY } from "~/consts";
 import {
-  XrpLedgerClientProvider,
+  XrpLedgerContext,
   useXrpLedgerClient,
 } from "~/hooks/useXrpLedgerHook";
 
@@ -15,7 +15,7 @@ export default function Create() {
   const [loading, setLoading] = useState(false);
   const { client } = useXrpLedgerClient();
   const { setWallet: setContextWallet, setWallets } = useContext(
-    XrpLedgerClientProvider
+    XrpLedgerContext
   );
   const [wallet, setWallet] = useState<Wallet>();
 
@@ -104,3 +104,7 @@ export default function Create() {
     </div>
   );
 }
+
+Create.getLayout = function getLayout(page: React.ReactElement) {
+  return page;
+};

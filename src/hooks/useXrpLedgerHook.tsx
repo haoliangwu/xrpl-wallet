@@ -25,11 +25,11 @@ export const DEFAULT_CTX_VALUE: XrpLedgerContext = {
   setWallets: () => {},
 };
 
-export const XrpLedgerClientProvider =
+export const XrpLedgerContext =
   createContext<XrpLedgerContext>(DEFAULT_CTX_VALUE);
 
 export function useXrpLedgerClient() {
-  const { client, network, setNetwork } = useContext(XrpLedgerClientProvider);
+  const { client, network, setNetwork } = useContext(XrpLedgerContext);
 
   return {
     client,
@@ -41,7 +41,7 @@ export function useXrpLedgerClient() {
 export function useXrpLedgerWallet() {
   const router = useRouter();
   const { wallet, wallets, setWallet, setWallets } = useContext(
-    XrpLedgerClientProvider
+    XrpLedgerContext
   );
 
   return {

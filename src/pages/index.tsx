@@ -1,16 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { CheckOutlined, SmileOutlined } from "@ant-design/icons";
-import {
-  Select,
-  Avatar,
-  Typography,
-  Divider,
-  Button,
-  Dropdown,
-  Result,
-} from "antd";
-import { UserOutlined } from "@ant-design/icons";
-import Image from "next/image";
+import { SmileOutlined } from "@ant-design/icons";
+import { Typography, Divider, Button, Result } from "antd";
 import {
   AccountInfoResponse,
   dropsToXrp,
@@ -110,69 +100,6 @@ export default function Home() {
 
   return wallet.isSome() ? (
     <div className="w-1000px mx-auto">
-      <div className="h-80px flex items-center gap-4">
-        <Image
-          width={200}
-          height={40}
-          src="https://xrpl.org/assets/img/XRPLedger_DevPortal-black.svg"
-          alt="logo"
-        />
-        <span className="flex-auto" />
-        <div>
-          <Select
-            value={network}
-            onChange={(v) => setNetwork(v)}
-            options={[
-              {
-                value: "wss://s.altnet.rippletest.net:51233",
-                label: "TestNet",
-              },
-              {
-                value: "wss://s.devnet.rippletest.net:51233/",
-                label: "DevNet",
-                disabled: true,
-              },
-            ]}
-          />
-        </div>
-        <div>
-          <Dropdown
-            menu={{
-              items: [
-                ...wallets.map((_wallet, idx) => {
-                  const isActive = wallet.every(
-                    (w) => w.address === _wallet.address
-                  );
-
-                  return {
-                    key: _wallet.address,
-                    label: (
-                      <div
-                        className="flex items-center"
-                        onClick={() => {
-                          setWallet(Maybe.Some(_wallet));
-                        }}
-                      >
-                        <span className="flex-auto">Account {idx + 1}</span>
-                        {isActive && <CheckOutlined />}
-                      </div>
-                    ),
-                  };
-                }),
-                {
-                  type: "divider",
-                },
-                {
-                  key: "create",
-                  label: <Link href="/create">Create Account</Link>,
-                },
-              ],
-            }}
-          >
-            <Avatar size="large" icon={<UserOutlined />} />
-          </Dropdown>
-        </div>
-      </div>
       <div className="bg-#ffffff p-4">
         <div className="h-64px text-center">
           <Typography.Title level={4}>Address</Typography.Title>
@@ -197,7 +124,15 @@ export default function Home() {
                 router.push("/send-tx");
               }}
             >
-              Send
+              Send Tx
+            </Button>
+            <Button
+              type="primary"
+              onClick={() => {
+                router.push("/nft");
+              }}
+            >
+              NFT
             </Button>
           </div>
         </div>
