@@ -69,7 +69,7 @@ export default function Home() {
   useEffect(() => {
     syncAccountInfo();
     syncAccountTxHistory();
-  }, [client, router, syncAccountInfo, syncAccountTxHistory]);
+  }, [syncAccountInfo, syncAccountTxHistory]);
 
   // real-time subscription
   useEffect(() => {
@@ -129,10 +129,10 @@ export default function Home() {
           <Button
             type="primary"
             onClick={() => {
-              router.push("/nft");
+              router.push("/nft/create");
             }}
           >
-            NFT
+            Mint NFT
           </Button>
         </div>
       </div>

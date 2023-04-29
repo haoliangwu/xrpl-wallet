@@ -38,7 +38,7 @@ const normFile = (e: any) => {
   return e?.fileList;
 };
 
-export default function NFT() {
+export default function CreateNFT() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const { client } = useXrpLedgerClient();
@@ -48,7 +48,7 @@ export default function NFT() {
   return (
     <div>
       <Typography.Title className="text-center" level={2}>
-        NTF
+        Mint NTF
       </Typography.Title>
       <Form
         disabled={loading}
@@ -78,11 +78,11 @@ export default function NFT() {
                       // todo: need to bind NFTokenMinter to AccountRoot
                       // Issuer: w.address,
                       Flags: NFTokenMintFlags.tfTransferable,
-                      URI: hexEncode(cid.toString()),
+                      URI: hexEncode(`${cid.toString()}/${attachment[0].name}`),
                       Memos: [
                         {
                           Memo: {
-                            MemoType: hexEncode(encodeURI("name")),
+                            MemoType: hexEncode(encodeURI("nftName")),
                             MemoData: hexEncode(encodeURI(values.name)),
                           },
                         },
@@ -105,6 +105,8 @@ export default function NFT() {
               defer
                 .then((res: TxResponse) => {
                   message.success(`TX ${res.id} Confirmed`);
+
+                  router.push("/nft");
                 })
                 .finally(() => {
                   setLoading(false);

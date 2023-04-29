@@ -80,11 +80,19 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
                   };
                 }),
                 {
+                  key: "create",
+                  label: <Link href="/create">Create Account</Link>,
+                },
+                {
                   type: "divider",
                 },
                 {
-                  key: "create",
-                  label: <Link href="/create">Create Account</Link>,
+                  key: "dashboard",
+                  label: <Link href="/">Dashboard</Link>,
+                },
+                {
+                  key: "nft",
+                  label: <Link href="/nft">My NFTs</Link>,
                 },
               ],
             }}
