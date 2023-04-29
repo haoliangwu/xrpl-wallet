@@ -21,13 +21,13 @@
     "bignumber.js": "^9.1.1",
     "eslint": "8.39.0",
     "eslint-config-next": "13.3.1",
-    "ipfs-core": "^0.18.0",
     "monet": "^0.9.3",
     "next": "13.3.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "typescript": "5.0.4",
     "unocss": "^0.51.8",
+    "web3.storage": "^4.5.4",
     "xrpl": "^2.7.0"
   },
   "devDependencies": {

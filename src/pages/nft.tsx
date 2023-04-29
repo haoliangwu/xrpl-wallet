@@ -18,10 +18,10 @@ import {
   dropsToXrp,
   xrpToDrops,
 } from "xrpl";
-import { IPFS } from "ipfs-core";
+import { Web3Storage } from "web3.storage";
 
 import {
-  useIPFS,
+  useWeb3Storage,
   useXrpLedgerClient,
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
@@ -43,7 +43,7 @@ export default function NFT() {
   const [loading, setLoading] = useState(false);
   const { client } = useXrpLedgerClient();
   const { wallet } = useXrpLedgerWallet();
-  const { ipfs } = useIPFS();
+  const { web3Storage } = useWeb3Storage();
 
   return (
     <div>
@@ -60,42 +60,47 @@ export default function NFT() {
           setLoading(true);
 
           wallet
-            .map((w) => (c: Client) => (ipfs: IPFS) => {
-              const attachment = values.attachment[0];
+            .map((w) => (c: Client) => (web3Storage: Web3Storage) => {
+              const attachment = values.attachment;
               const taxon = generateNFTokenTaxon();
 
-              return ipfs.add(attachment.originFileObj).then(({ cid }) => {
-                return c
-                  .autofill({
-                    TransactionType: "NFTokenMint",
-                    NFTokenTaxon: taxon,
-                    Account: w.address,
-                    // todo: need to bind NFTokenMinter to AccountRoot
-                    // Issuer: w.address,
-                    Flags: NFTokenMintFlags.tfTransferable,
-                    URI: hexEncode(cid.toString()),
-                    Memos: [
-                      {
-                        Memo: {
-                          MemoType: hexEncode(encodeURI("name")),
-                          MemoData: hexEncode(encodeURI(values.name)),
+              return web3Storage
+                .put(
+                  attachment.map((a: any) => a.originFileObj),
+                  { name: values.name }
+                )
+                .then((cid) => {
+                  return c
+                    .autofill({
+                      TransactionType: "NFTokenMint",
+                      NFTokenTaxon: taxon,
+                      Account: w.address,
+                      // todo: need to bind NFTokenMinter to AccountRoot
+                      // Issuer: w.address,
+                      Flags: NFTokenMintFlags.tfTransferable,
+                      URI: hexEncode(cid.toString()),
+                      Memos: [
+                        {
+                          Memo: {
+                            MemoType: hexEncode(encodeURI("name")),
+                            MemoData: hexEncode(encodeURI(values.name)),
+                          },
                         },
-                      },
-                      {
-                        Memo: {
-                          MemoType: hexEncode(encodeURI("mimetype")),
-                          MemoData: hexEncode(encodeURI(attachment.type)),
+                        {
+                          Memo: {
+                            MemoType: hexEncode(encodeURI("mimetype")),
+                            MemoData: hexEncode(encodeURI(attachment.type)),
+                          },
                         },
-                      },
-                    ],
-                  })
-                  .then((prepared) => {
-                    return c.submitAndWait(w.sign(prepared).tx_blob);
-                  });
-              });
+                      ],
+                    })
+                    .then((prepared) => {
+                      return c.submitAndWait(w.sign(prepared).tx_blob);
+                    });
+                });
             })
             .apTo(client)
-            .apTo(ipfs)
+            .apTo(web3Storage)
             .forEach((defer) => {
               defer
                 .then((res: TxResponse) => {

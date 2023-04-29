@@ -12,7 +12,7 @@ import { Client, Wallet } from "xrpl";
 import { Avatar, Dropdown, Select, Spin } from "antd";
 import { useRouter } from "next/router";
 import { Maybe } from "monet";
-import { IPFS, create } from "ipfs-core";
+import { Web3Storage } from "web3.storage";
 
 import { XrpLedgerContext, DEFAULT_CTX_VALUE } from "~/hooks/useXrpLedgerHook";
 import { LS_KEY } from "~/consts";
@@ -103,7 +103,9 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [network, setNetwork] = useState(DEFAULT_CTX_VALUE.network);
-  const [ipfs, setIpfs] = useState<Maybe<IPFS>>(Maybe.None());
+  const [web3Storage, setWeb3Storage] = useState<Maybe<Web3Storage>>(
+    Maybe.None()
+  );
   const [client, setClient] = useState<Maybe<Client>>(Maybe.None());
   const [wallet, setWallet] = useState<Maybe<Wallet>>(Maybe.None());
   const [wallets, setWallets] = useState<Wallet[]>([]);
@@ -135,21 +137,19 @@ function MyApp({ Component, pageProps }: AppProps) {
     };
   }, [network]);
 
-  const initIpfsOnce = useRef(false);
-
   useEffect(() => {
-    if (ipfs.isSome() || initIpfsOnce.current) return;
-
-    initIpfsOnce.current = true;
-
-    create().then((ipfs) => {
-      setIpfs(Maybe.Some(ipfs));
-    });
-  }, [ipfs]);
+    setWeb3Storage(
+      Maybe.Some(
+        new Web3Storage({
+          token: process.env.NEXT_PUBLIC_WEB3STORAGE_TOKEN as string,
+        })
+      )
+    );
+  }, []);
 
   const ctx = useMemo(() => {
     return {
-      ipfs,
+      web3Storage,
       client,
       wallet,
       wallets,
@@ -158,7 +158,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       setWallet,
       setWallets,
     };
-  }, [ipfs, client, wallet, wallets, network]);
+  }, [web3Storage, client, wallet, wallets, network]);
 
   // @ts-ignore
   const getLayout = Component.getLayout;
