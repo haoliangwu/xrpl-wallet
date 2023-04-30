@@ -78,7 +78,9 @@ export default function CreateNFT() {
                       // todo: need to bind NFTokenMinter to AccountRoot
                       // Issuer: w.address,
                       Flags: NFTokenMintFlags.tfTransferable,
-                      URI: hexEncode(`${cid.toString()}/${attachment[0].name}`),
+                      URI: hexEncode(
+                        encodeURI(`${cid.toString()}/${attachment[0].name}`)
+                      ),
                       Memos: [
                         {
                           Memo: {
@@ -106,7 +108,9 @@ export default function CreateNFT() {
                 .then((res: TxResponse) => {
                   message.success(`TX ${res.id} Confirmed`);
 
-                  router.push("/nft");
+                  router.push(
+                    `/nft/${wallet.map((w) => w.address).orSome("")}`
+                  );
                 })
                 .finally(() => {
                   setLoading(false);

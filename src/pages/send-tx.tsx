@@ -19,7 +19,9 @@ export default function SendTx() {
 
   return (
     <div>
-      <Typography.Title className="text-center" level={2}>Send Tx</Typography.Title>
+      <Typography.Title className="text-center" level={2}>
+        Send Tx
+      </Typography.Title>
       <Form
         disabled={loading}
         className="w-60% mx-auto"
@@ -88,7 +90,7 @@ export default function SendTx() {
             { required: true, message: "Please input the xrp quantity!" },
           ]}
         >
-          <InputNumber placeholder="100" step={10} min={0} />
+          <InputNumber placeholder="100" addonAfter="XRP" step={10} min={0} />
         </Form.Item>
 
         <Form.Item className="text-right" wrapperCol={{ offset: 18, span: 6 }}>

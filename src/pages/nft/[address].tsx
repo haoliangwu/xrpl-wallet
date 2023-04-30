@@ -1,7 +1,19 @@
-import { Button, Card, Col, Row, Spin, Typography, message } from "antd";
+import {
+  Button,
+  Card,
+  Col,
+  Form,
+  FormInstance,
+  InputNumber,
+  Modal,
+  Row,
+  Spin,
+  Typography,
+  message,
+} from "antd";
 import { SettingOutlined, ShareAltOutlined } from "@ant-design/icons";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AccountNFTsResponse,
   AccountOffersResponse,
@@ -36,6 +48,12 @@ export default function NFT() {
       }
     >
   >([]);
+  const [nft, setNFT] = useState<
+    ArrayElement<AccountNFTsResponse["result"]["account_nfts"]> & {
+      sellOffers: NFTSellOffersResponse["result"]["offers"];
+      buyOffers: NFTBuyOffersResponse["result"]["offers"];
+    }
+  >();
 
   const syncAccountNFTs = useCallback(() => {
     wallet
@@ -99,6 +117,9 @@ export default function NFT() {
 
   const isSelf = wallet.every((w) => w.address === address);
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const formRef = useRef<FormInstance>(null);
+
   return (
     <div>
       {loading && (
@@ -127,7 +148,7 @@ export default function NFT() {
             : "";
 
           return (
-            <Col key={nft.NFTokenID} span={8}>
+            <Col className="mb-4" key={nft.NFTokenID} span={8}>
               <Card
                 cover={
                   nft.URI ? (
@@ -147,35 +168,7 @@ export default function NFT() {
                       type="link"
                       key="sell"
                       onClick={() => {
-                        setLoading(true);
-
-                        wallet
-                          .map((w) => (c: Client) => {
-                            return c
-                              .autofill({
-                                Account: w.address,
-                                TransactionType: "NFTokenCreateOffer",
-                                NFTokenID: nft.NFTokenID,
-                                // todo: custom Amount
-                                Amount: "10",
-                                Flags: NFTokenCreateOfferFlags.tfSellNFToken,
-                              })
-                              .then((prepared) => {
-                                return c.submitAndWait(
-                                  w.sign(prepared).tx_blob
-                                );
-                              });
-                          })
-                          .apTo(client)
-                          .forEach((defer) => {
-                            defer
-                              .then((res: TxResponse) => {
-                                message.success(`TX ${res.id} Confirmed`);
-                              })
-                              .finally(() => {
-                                setLoading(false);
-                              });
-                          });
+                        router.push(`${router.asPath}/${nft.NFTokenID}`);
                       }}
                     >
                       SELL
@@ -185,35 +178,8 @@ export default function NFT() {
                       type="link"
                       key="buy"
                       onClick={() => {
-                        setLoading(true);
-
-                        wallet
-                          .map((w) => (c: Client) => {
-                            return c
-                              .autofill({
-                                Owner: address as string,
-                                Account: w.address,
-                                TransactionType: "NFTokenCreateOffer",
-                                NFTokenID: nft.NFTokenID,
-                                // todo: custom Amount
-                                Amount: "10",
-                              })
-                              .then((prepared) => {
-                                return c.submitAndWait(
-                                  w.sign(prepared).tx_blob
-                                );
-                              });
-                          })
-                          .apTo(client)
-                          .forEach((defer) => {
-                            defer
-                              .then((res: TxResponse) => {
-                                message.success(`TX ${res.id} Confirmed`);
-                              })
-                              .finally(() => {
-                                setLoading(false);
-                              });
-                          });
+                        setNFT(nft);
+                        setIsModalOpen(true);
                       }}
                     >
                       BUY
@@ -228,15 +194,6 @@ export default function NFT() {
                       navigator.clipboard.writeText(normalizedUri);
                     }}
                   />,
-                  <Button
-                    type="link"
-                    disabled={!isSelf}
-                    key="settings"
-                    icon={<SettingOutlined />}
-                    onClick={() =>
-                      router.push(`${router.asPath}/${nft.NFTokenID}`)
-                    }
-                  />,
                 ]}
               >
                 <Card.Meta description={nft.NFTokenID} />
@@ -245,6 +202,63 @@ export default function NFT() {
           );
         })}
       </Row>
+      <Modal
+        key={nft?.NFTokenID}
+        title="Create BUY Offer"
+        open={isModalOpen}
+        onOk={() => {
+          if (!nft) return;
+
+          setIsModalOpen(false);
+          setLoading(true);
+
+          wallet
+            .map((w) => (c: Client) => {
+              return c
+                .autofill({
+                  Owner: address as string,
+                  Account: w.address,
+                  TransactionType: "NFTokenCreateOffer",
+                  NFTokenID: nft.NFTokenID,
+                  // todo: custom Amount
+                  Amount: `${formRef.current?.getFieldValue("qty")}`,
+                })
+                .then((prepared) => {
+                  return c.submitAndWait(w.sign(prepared).tx_blob);
+                });
+            })
+            .apTo(client)
+            .forEach((defer) => {
+              defer
+                .then((res: TxResponse) => {
+                  message.success(`TX ${res.id} Confirmed`);
+                })
+                .finally(() => {
+                  setLoading(false);
+                });
+            });
+        }}
+        onCancel={() => setIsModalOpen(false)}
+      >
+        <Form
+          ref={formRef}
+          disabled={loading}
+          name="basic"
+          labelAlign="left"
+          labelCol={{ span: 6 }}
+          wrapperCol={{ span: 18 }}
+        >
+          <Form.Item
+            label="Quantity"
+            name="qty"
+            rules={[
+              { required: true, message: "Please input the xrp quantity!" },
+            ]}
+          >
+            <InputNumber placeholder="100" addonAfter="XRP" step={10} min={0} />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev:css": "unocss src/**/*.tsx -o=src/styles/uno.css --watch",
+    "dev:css": "unocss src/**/*.tsx -o=./src/styles/uno.css --watch",
     "dev:next": "next dev",
     "dev": "run-p dev:*",
     "build:next": "next build",
-    "build:css": "unocss src/**/*.tsx -o=src/styles/uno.css",
+    "build:css": "unocss src/**/*.tsx -o=./src/styles/uno.css",
     "build": "run-s build:css build:next",
     "start": "next start",
     "lint": "next lint"

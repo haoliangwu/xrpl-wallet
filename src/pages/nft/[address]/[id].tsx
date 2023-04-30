@@ -1,4 +1,15 @@
-import { Button, Card, Col, Row, Spin, Typography, message } from "antd";
+import {
+  Button,
+  Card,
+  Col,
+  Row,
+  Spin,
+  Typography,
+  message,
+  List,
+  Checkbox,
+  Divider,
+} from "antd";
 import { SettingOutlined, ShareAltOutlined } from "@ant-design/icons";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useState } from "react";
@@ -28,76 +39,83 @@ export default function NFTDetail() {
   const { wallet } = useXrpLedgerWallet();
   const { web3Storage } = useWeb3Storage();
 
-  //   const [nfts, setNFTs] = useState<
-  //     Array<
-  //       ArrayElement<AccountNFTsResponse["result"]["account_nfts"]> & {
-  //         sellOffers: NFTSellOffersResponse["result"]["offers"];
-  //         buyOffers: NFTBuyOffersResponse["result"]["offers"];
-  //       }
-  //     >
-  //   >([]);
+  const [sellOffer, setSellOffer] =
+    useState<ArrayElement<NFTSellOffersResponse["result"]["offers"]>>();
+  const [buyOffer, setBuyOffer] =
+    useState<ArrayElement<NFTSellOffersResponse["result"]["offers"]>>();
 
-  //   const syncAccountNFTs = useCallback(() => {
-  //     wallet
-  //       .map(
-  //         (w) => (c: Client) =>
-  //           c
-  //             .request({
-  //               command: "account_nfts",
-  //               account: address as string,
-  //             })
-  //             .then((res) => {
-  //               return Promise.all(
-  //                 res.result.account_nfts.map((nft) => {
-  //                   return Promise.all([
-  //                     c
-  //                       .request({
-  //                         command: "nft_sell_offers",
-  //                         nft_id: nft.NFTokenID,
-  //                       })
-  //                       .catch(() => {
-  //                         return {
-  //                           result: {
-  //                             offers: [],
-  //                           },
-  //                         };
-  //                       }),
-  //                     c
-  //                       .request({
-  //                         command: "nft_buy_offers",
-  //                         nft_id: nft.NFTokenID,
-  //                       })
-  //                       .catch(() => ({
-  //                         result: {
-  //                           offers: [],
-  //                         },
-  //                       })),
-  //                     ,
-  //                   ]).then(([sellOffers, buyOffers]) => {
-  //                     return {
-  //                       ...nft,
-  //                       sellOffers: sellOffers.result.offers,
-  //                       buyOffers: buyOffers.result.offers,
-  //                     };
-  //                   });
-  //                 })
-  //               );
-  //             })
-  //       )
-  //       .apTo(client)
-  //       .forEach((defer) => {
-  //         defer.then((res) => {
-  //           setNFTs(res);
-  //         });
-  //       });
-  //   }, [client, wallet, address]);
+  const [nft, setNFT] = useState<
+    ArrayElement<AccountNFTsResponse["result"]["account_nfts"]> & {
+      sellOffers: NFTSellOffersResponse["result"]["offers"];
+      buyOffers: NFTBuyOffersResponse["result"]["offers"];
+    }
+  >();
 
-  //   // init logic when comp is mounted
-  //   useEffect(() => {
-  //     syncAccountNFTs();
-  //   }, [syncAccountNFTs]);
+  const syncAccountNFTs = useCallback(() => {
+    wallet
+      .map(
+        (w) => (c: Client) =>
+          c
+            .request({
+              command: "account_nfts",
+              account: address as string,
+            })
+            .then((res) =>
+              res.result.account_nfts.find((ntf) => ntf.NFTokenID === id)
+            )
+            .then((nft) => {
+              if (!nft) return Promise.reject("not found ntf object");
+
+              return Promise.all([
+                c
+                  .request({
+                    command: "nft_sell_offers",
+                    nft_id: nft.NFTokenID,
+                  })
+                  .catch(() => {
+                    return {
+                      result: {
+                        offers: [],
+                      },
+                    };
+                  }),
+                c
+                  .request({
+                    command: "nft_buy_offers",
+                    nft_id: nft.NFTokenID,
+                  })
+                  .catch(() => ({
+                    result: {
+                      offers: [],
+                    },
+                  })),
+                ,
+              ]).then(([sellOffers, buyOffers]) => {
+                return {
+                  ...nft,
+                  sellOffers: sellOffers.result.offers,
+                  buyOffers: buyOffers.result.offers,
+                };
+              });
+            })
+      )
+      .apTo(client)
+      .forEach((defer) => {
+        defer.then((res) => {
+          setNFT(res);
+        });
+      });
+  }, [wallet, client, address, id]);
+
+  // init logic when comp is mounted
+  useEffect(() => {
+    syncAccountNFTs();
+  }, [syncAccountNFTs]);
 
   const isSelf = wallet.every((w) => w.address === address);
+  const normalizedUri = nft?.URI
+    ? `https://ipfs.io/ipfs/${hexDecode(nft.URI)}`
+    : "";
 
   return (
     <div>
@@ -112,15 +130,135 @@ export default function NFTDetail() {
             NFT <Typography.Text>/ {id}</Typography.Text>
           </Typography.Title>
         </Col>
-        {/* {isSelf && (
-          <Col span={8} className="text-right">
-            <Button type="primary" onClick={() => router.push("/nft/create")}>
-              Mint
-            </Button>
-          </Col>
-        )} */}
       </Row>
-      <Row gutter={16}>{/* todo */}</Row>
+      <Row>
+        <Col span={8} offset={16} className="text-right">
+          <Button
+            disabled={(isSelf && !buyOffer) || (!isSelf && !sellOffer)}
+            type="primary"
+            onClick={() => {
+              setLoading(true);
+
+              wallet
+                .map((w) => (c: Client) => {
+                  return c
+                    .autofill(
+                      isSelf
+                        ? {
+                            Account: w.address,
+                            TransactionType: "NFTokenAcceptOffer",
+                            NFTokenBuyOffer: buyOffer?.nft_offer_index,
+                          }
+                        : {
+                            Account: w.address,
+                            TransactionType: "NFTokenAcceptOffer",
+                            NFTokenSellOffer: sellOffer?.nft_offer_index,
+                          }
+                    )
+                    .then((prepared) => {
+                      return c.submitAndWait(w.sign(prepared).tx_blob);
+                    });
+                })
+                .apTo(client)
+                .forEach((defer) => {
+                  defer
+                    .then((res: TxResponse) => {
+                      message.success(`TX ${res.id} Confirmed`);
+
+                      router.push(
+                        `/nft/${wallet.map((w) => w.address).orSome("")}`
+                      );
+                    })
+                    .finally(() => {
+                      setLoading(false);
+                    });
+                });
+            }}
+          >
+            Accept
+          </Button>
+        </Col>
+      </Row>
+      <Row gutter={16} className="mt-4">
+        <Col span={8}>
+          <img
+            className="w-full object-cover"
+            alt="nft cover"
+            src={normalizedUri}
+          />
+        </Col>
+        <Col span={16}>
+          {!isSelf ? (
+            <List
+              header={
+                <div className="flex">
+                  <Typography.Title level={3}>SELL Offers</Typography.Title>
+                  <span className="flex-auto"></span>
+                </div>
+              }
+              bordered
+              dataSource={nft?.sellOffers}
+              renderItem={(
+                item: ArrayElement<NFTSellOffersResponse["result"]["offers"]>
+              ) => (
+                <List.Item>
+                  <div className="flex-auto">
+                    <div className="flex">
+                      <Typography.Text>{item.nft_offer_index}</Typography.Text>
+                      <span className="flex-auto" />
+                      <Checkbox
+                        checked={
+                          sellOffer?.nft_offer_index === item.nft_offer_index
+                        }
+                        onClick={() => setSellOffer(item)}
+                      />
+                    </div>
+                    <Typography.Text mark>
+                      {item.amount.toString()}
+                    </Typography.Text>
+                    <span className="mx-1">XRP /</span>
+                    <Typography.Text>{item.owner}</Typography.Text>
+                  </div>
+                </List.Item>
+              )}
+            />
+          ) : (
+            <List
+              header={
+                <div className="flex">
+                  <Typography.Title level={3}>BUY Offers</Typography.Title>
+                  <span className="flex-auto"></span>
+                </div>
+              }
+              bordered
+              dataSource={nft?.buyOffers}
+              renderItem={(
+                item: ArrayElement<NFTBuyOffersResponse["result"]["offers"]>
+              ) => (
+                <List.Item>
+                  <div className="flex-auto">
+                    <div className="flex">
+                      <Typography.Text>{item.nft_offer_index}</Typography.Text>
+                      <span className="flex-auto" />
+                      <Checkbox
+                        checked={
+                          buyOffer?.nft_offer_index === item.nft_offer_index
+                        }
+                        onClick={() => setBuyOffer(item)}
+                      />
+                    </div>
+                    <Typography.Text mark>
+                      {item.amount.toString()}
+                    </Typography.Text>
+                    <span className="mx-1">XRP /</span>
+                    <Typography.Text>{item.owner}</Typography.Text>
+                  </div>
+                </List.Item>
+              )}
+            />
+          )}
+        </Col>
+      </Row>
     </div>
   );
 }
