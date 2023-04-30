@@ -9,6 +9,7 @@ import {
   List,
   Checkbox,
   Divider,
+  Popconfirm,
 } from "antd";
 import { SettingOutlined, ShareAltOutlined } from "@ant-design/icons";
 import { useRouter } from "next/router";
@@ -132,7 +133,7 @@ export default function NFTDetail() {
         </Col>
       </Row>
       <Row>
-        <Col span={8} offset={16} className="text-right">
+        <Col span={24} className="text-right">
           <Button
             disabled={(isSelf && !buyOffer) || (!isSelf && !sellOffer)}
             type="primary"
@@ -177,6 +178,45 @@ export default function NFTDetail() {
           >
             Accept
           </Button>
+          <Popconfirm
+            title="Are you sure ?"
+            onConfirm={() => {
+              setLoading(true);
+
+              wallet
+                .map((w) => (c: Client) => {
+                  return c
+                    .autofill({
+                      Account: w.address,
+                      TransactionType: "NFTokenBurn",
+                      NFTokenID: id as string,
+                    })
+                    .then((prepared) => {
+                      return c.submitAndWait(w.sign(prepared).tx_blob);
+                    });
+                })
+                .apTo(client)
+                .forEach((defer) => {
+                  defer
+                    .then((res: TxResponse) => {
+                      message.success(`TX ${res.id} Confirmed`);
+
+                      router.push(
+                        `/nft/${wallet.map((w) => w.address).orSome("")}`
+                      );
+                    })
+                    .finally(() => {
+                      setLoading(false);
+                    });
+                });
+            }}
+            okText="Yes"
+            cancelText="No"
+          >
+            <Button danger type="primary" className="ml-2">
+              Burn
+            </Button>
+          </Popconfirm>
         </Col>
       </Row>
       <Row gutter={16} className="mt-4">

@@ -167,12 +167,11 @@ export default function NFT() {
                     <Button
                       type="link"
                       key="sell"
+                      icon={<SettingOutlined />}
                       onClick={() => {
                         router.push(`${router.asPath}/${nft.NFTokenID}`);
                       }}
-                    >
-                      SELL
-                    </Button>
+                    />
                   ) : (
                     <Button
                       type="link"
