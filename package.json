@@ -6,9 +6,7 @@
     "dev:css": "unocss src/**/*.tsx -o=./src/styles/uno.css --watch",
     "dev:next": "next dev",
     "dev": "run-p dev:*",
-    "build:next": "next build",
-    "build:css": "unocss src/**/*.tsx -o=./src/styles/uno.css",
-    "build": "run-s build:css build:next",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
