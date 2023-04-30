@@ -104,10 +104,7 @@ export default function Home() {
       <div className="h-64px text-center">
         <Typography.Title level={4}>Address</Typography.Title>
         <Typography.Text copyable>
-          {wallet.cata(
-            () => "-",
-            (w) => w.address
-          )}
+          {wallet.some().address}
         </Typography.Text>
       </div>
       <Divider />
