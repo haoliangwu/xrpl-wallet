@@ -21,8 +21,9 @@ import { hexDecode } from "~/utils";
 
 export default function Home() {
   const router = useRouter();
-  const [account, setAccount] =
-    useState<AccountInfoResponse["result"]["account_data"]>();
+  const [account, setAccount] = useState<
+    AccountInfoResponse["result"]["account_data"] & { Id: string }
+  >();
 
   const { client, network, setNetwork } = useXrpLedgerClient();
   const { wallet, wallets, setWallet } = useXrpLedgerWallet();
@@ -34,16 +35,27 @@ export default function Home() {
     wallet
       .map(
         (w) => (c: Client) =>
-          c.request({
-            command: "account_info",
-            account: w.address,
-            ledger_index: "validated",
-          })
+          c
+            .request({
+              command: "account_info",
+              account: w.address,
+              ledger_index: "validated",
+            })
+            .then(({ result }) => {
+              return fetch(`/api/account-id?pubKey=${w.publicKey}`)
+                .then((res) => res.json())
+                .then(({ account_id }) => {
+                  return {
+                    ...result.account_data,
+                    Id: account_id,
+                  };
+                });
+            })
       )
       .apTo(client)
       .forEach((defer) => {
-        defer.then(({ result }) => {
-          setAccount(result.account_data);
+        defer.then((account) => {
+          setAccount(account);
         });
       });
   }, [client, wallet]);
@@ -101,11 +113,11 @@ export default function Home() {
 
   return wallet.isSome() ? (
     <>
-      <div className="h-64px text-center">
+      <div className="text-center">
+        <Typography.Title level={4}>Account ID</Typography.Title>
+        <Typography.Text copyable>{account?.Id}</Typography.Text>
         <Typography.Title level={4}>Address</Typography.Title>
-        <Typography.Text copyable>
-          {wallet.some().address}
-        </Typography.Text>
+        <Typography.Text copyable>{wallet.some().address}</Typography.Text>
       </div>
       <Divider />
       <div className="flex flex-col items-center">
