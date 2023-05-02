@@ -10,10 +10,14 @@ import {
   Checkbox,
   Divider,
   Popconfirm,
+  FormInstance,
+  Modal,
+  Form,
+  InputNumber,
 } from "antd";
 import { SettingOutlined, ShareAltOutlined } from "@ant-design/icons";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AccountNFTsResponse,
   AccountOffersResponse,
@@ -51,6 +55,8 @@ export default function NFTDetail() {
       buyOffers: NFTBuyOffersResponse["result"]["offers"];
     }
   >();
+
+  const isSelf = wallet.every((w) => w.address === address);
 
   const syncAccountNFTs = useCallback(() => {
     wallet
@@ -113,7 +119,11 @@ export default function NFTDetail() {
     syncAccountNFTs();
   }, [syncAccountNFTs]);
 
-  const isSelf = wallet.every((w) => w.address === address);
+  const [isModalOpenSell, setIsModalOpenSell] = useState(false);
+  const formRefSell = useRef<FormInstance>(null);
+  const [isModalOpenBuy, setIsModalOpenBuy] = useState(false);
+  const formRefBuy = useRef<FormInstance>(null);
+
   const normalizedUri = nft?.URI
     ? `https://ipfs.io/ipfs/${hexDecode(nft.URI)}`
     : "";
@@ -133,91 +143,108 @@ export default function NFTDetail() {
         </Col>
       </Row>
       <Row>
-        <Col span={24} className="text-right">
-          <Button
-            disabled={(isSelf && !buyOffer) || (!isSelf && !sellOffer)}
-            type="primary"
-            onClick={() => {
-              setLoading(true);
+        {isSelf ? (
+          <Col span={24} className="text-right">
+            {nft?.sellOffers && nft?.sellOffers.length > 0 ? (
+              <Popconfirm
+                title="Are you sure ?"
+                okText="Yes"
+                cancelText="No"
+                onConfirm={() => {
+                  setLoading(true);
 
-              wallet
-                .map((w) => (c: Client) => {
-                  return c
-                    .autofill(
-                      isSelf
-                        ? {
-                            Account: w.address,
-                            TransactionType: "NFTokenAcceptOffer",
-                            NFTokenBuyOffer: buyOffer?.nft_offer_index,
-                          }
-                        : {
-                            Account: w.address,
-                            TransactionType: "NFTokenAcceptOffer",
-                            NFTokenSellOffer: sellOffer?.nft_offer_index,
-                          }
-                    )
-                    .then((prepared) => {
-                      return c.submitAndWait(w.sign(prepared).tx_blob);
-                    });
-                })
-                .apTo(client)
-                .forEach((defer) => {
-                  defer
-                    .then((res: TxResponse) => {
-                      message.success(`TX ${res.id} Confirmed`);
-
-                      router.push(
-                        `/nft/${wallet.map((w) => w.address).orSome("")}`
-                      );
+                  wallet
+                    .map((w) => (c: Client) => {
+                      return c
+                        .autofill(
+                          isSelf
+                            ? {
+                                Account: w.address,
+                                TransactionType: "NFTokenAcceptOffer",
+                                NFTokenBuyOffer: buyOffer?.nft_offer_index,
+                              }
+                            : {
+                                Account: w.address,
+                                TransactionType: "NFTokenAcceptOffer",
+                                NFTokenSellOffer: sellOffer?.nft_offer_index,
+                              }
+                        )
+                        .then((prepared) => {
+                          return c.submitAndWait(w.sign(prepared).tx_blob);
+                        });
                     })
-                    .finally(() => {
-                      setLoading(false);
-                    });
-                });
-            }}
-          >
-            Accept
-          </Button>
-          <Popconfirm
-            title="Are you sure ?"
-            onConfirm={() => {
-              setLoading(true);
+                    .apTo(client)
+                    .forEach((defer) => {
+                      defer
+                        .then((res: TxResponse) => {
+                          message.success(`TX ${res.id} Confirmed`);
 
-              wallet
-                .map((w) => (c: Client) => {
-                  return c
-                    .autofill({
-                      Account: w.address,
-                      TransactionType: "NFTokenBurn",
-                      NFTokenID: id as string,
-                    })
-                    .then((prepared) => {
-                      return c.submitAndWait(w.sign(prepared).tx_blob);
+                          router.push(
+                            `/nft/${wallet.map((w) => w.address).orSome("")}`
+                          );
+                        })
+                        .finally(() => {
+                          setLoading(false);
+                        });
                     });
-                })
-                .apTo(client)
-                .forEach((defer) => {
-                  defer
-                    .then((res: TxResponse) => {
-                      message.success(`TX ${res.id} Confirmed`);
+                }}
+              >
+                <Button disabled={!buyOffer} type="primary">
+                  Accept
+                </Button>
+              </Popconfirm>
+            ) : (
+              <Button type="primary" onClick={() => setIsModalOpenSell(true)}>
+                SELL
+              </Button>
+            )}
+            <Popconfirm
+              title="Are you sure ?"
+              onConfirm={() => {
+                setLoading(true);
 
-                      router.push(
-                        `/nft/${wallet.map((w) => w.address).orSome("")}`
-                      );
-                    })
-                    .finally(() => {
-                      setLoading(false);
-                    });
-                });
-            }}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button danger type="primary" className="ml-2">
-              Burn
+                wallet
+                  .map((w) => (c: Client) => {
+                    return c
+                      .autofill({
+                        Account: w.address,
+                        TransactionType: "NFTokenBurn",
+                        NFTokenID: id as string,
+                      })
+                      .then((prepared) => {
+                        return c.submitAndWait(w.sign(prepared).tx_blob);
+                      });
+                  })
+                  .apTo(client)
+                  .forEach((defer) => {
+                    defer
+                      .then((res: TxResponse) => {
+                        message.success(`TX ${res.id} Confirmed`);
+
+                        router.push(
+                          `/nft/${wallet.map((w) => w.address).orSome("")}`
+                        );
+                      })
+                      .finally(() => {
+                        setLoading(false);
+                      });
+                  });
+              }}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button danger type="primary" className="ml-2">
+                Burn
+              </Button>
+            </Popconfirm>
+          </Col>
+        ) : (
+          <Col span={24} className="text-right">
+            <Button type="primary" onClick={() => setIsModalOpenBuy(true)}>
+              BUY
             </Button>
-          </Popconfirm>
-        </Col>
+          </Col>
+        )}
       </Row>
       <Row gutter={16} className="mt-4">
         <Col span={8}>
@@ -228,77 +255,187 @@ export default function NFTDetail() {
           />
         </Col>
         <Col span={16}>
-          {!isSelf ? (
-            <List
-              header={
-                <div className="flex">
-                  <Typography.Title level={3}>SELL Offers</Typography.Title>
-                  <span className="flex-auto"></span>
-                </div>
-              }
-              bordered
-              dataSource={nft?.sellOffers}
-              renderItem={(
-                item: ArrayElement<NFTSellOffersResponse["result"]["offers"]>
-              ) => (
-                <List.Item>
-                  <div className="flex-auto">
-                    <div className="flex">
-                      <Typography.Text>{item.nft_offer_index}</Typography.Text>
-                      <span className="flex-auto" />
-                      <Checkbox
-                        checked={
-                          sellOffer?.nft_offer_index === item.nft_offer_index
-                        }
-                        onClick={() => setSellOffer(item)}
-                      />
-                    </div>
-                    <Typography.Text mark>
-                      {item.amount.toString()}
-                    </Typography.Text>
-                    <span className="mx-1">XRP /</span>
-                    <Typography.Text>{item.owner}</Typography.Text>
+          <List
+            header={
+              <div className="flex">
+                <Typography.Title level={3}>SELL Offers</Typography.Title>
+                <span className="flex-auto"></span>
+              </div>
+            }
+            bordered
+            dataSource={nft?.sellOffers}
+            renderItem={(
+              item: ArrayElement<NFTSellOffersResponse["result"]["offers"]>
+            ) => (
+              <List.Item>
+                <div className="flex-auto">
+                  <div className="flex">
+                    <Typography.Text>{item.nft_offer_index}</Typography.Text>
                   </div>
-                </List.Item>
-              )}
-            />
-          ) : (
-            <List
-              header={
-                <div className="flex">
-                  <Typography.Title level={3}>BUY Offers</Typography.Title>
-                  <span className="flex-auto"></span>
+                  <Typography.Text mark>
+                    {item.amount.toString()}
+                  </Typography.Text>
+                  <span className="mx-1">XRP /</span>
+                  <Typography.Text>{item.owner}</Typography.Text>
                 </div>
-              }
-              bordered
-              dataSource={nft?.buyOffers}
-              renderItem={(
-                item: ArrayElement<NFTBuyOffersResponse["result"]["offers"]>
-              ) => (
-                <List.Item>
-                  <div className="flex-auto">
-                    <div className="flex">
-                      <Typography.Text>{item.nft_offer_index}</Typography.Text>
-                      <span className="flex-auto" />
-                      <Checkbox
-                        checked={
-                          buyOffer?.nft_offer_index === item.nft_offer_index
-                        }
-                        onClick={() => setBuyOffer(item)}
-                      />
-                    </div>
-                    <Typography.Text mark>
-                      {item.amount.toString()}
-                    </Typography.Text>
-                    <span className="mx-1">XRP /</span>
-                    <Typography.Text>{item.owner}</Typography.Text>
+              </List.Item>
+            )}
+          />
+          <List
+            className="mt-4"
+            header={
+              <div className="flex">
+                <Typography.Title level={3}>BUY Offers</Typography.Title>
+                <span className="flex-auto"></span>
+              </div>
+            }
+            bordered
+            dataSource={nft?.buyOffers}
+            renderItem={(
+              item: ArrayElement<NFTBuyOffersResponse["result"]["offers"]>
+            ) => (
+              <List.Item>
+                <div className="flex-auto">
+                  <div className="flex">
+                    <Typography.Text>{item.nft_offer_index}</Typography.Text>
+                    <span className="flex-auto" />
+                    <Checkbox
+                      checked={
+                        buyOffer?.nft_offer_index === item.nft_offer_index
+                      }
+                      onClick={() => setBuyOffer(item)}
+                    />
                   </div>
-                </List.Item>
-              )}
-            />
-          )}
+                  <Typography.Text mark>
+                    {item.amount.toString()}
+                  </Typography.Text>
+                  <span className="mx-1">XRP /</span>
+                  <Typography.Text>{item.owner}</Typography.Text>
+                </div>
+              </List.Item>
+            )}
+          />
         </Col>
       </Row>
+      <Modal
+        key={nft?.NFTokenID + "SELL"}
+        title="Create SELL Offer"
+        open={isModalOpenSell}
+        onOk={() => {
+          if (!nft) return;
+
+          setIsModalOpenSell(false);
+          setLoading(true);
+
+          wallet
+            .map((w) => (c: Client) => {
+              return c
+                .autofill({
+                  Account: w.address,
+                  TransactionType: "NFTokenCreateOffer",
+                  NFTokenID: nft.NFTokenID,
+                  Amount: `${formRefSell.current?.getFieldValue("qty")}`,
+                  // todo: should be broker
+                  Destination: "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+                  Flags: NFTokenCreateOfferFlags.tfSellNFToken,
+                })
+                .then((prepared) => {
+                  return c.submitAndWait(w.sign(prepared).tx_blob);
+                });
+            })
+            .apTo(client)
+            .forEach((defer) => {
+              defer
+                .then((res: TxResponse) => {
+                  message.success(`TX ${res.id} Confirmed`);
+
+                  syncAccountNFTs();
+                })
+                .finally(() => {
+                  setLoading(false);
+                });
+            });
+        }}
+        onCancel={() => setIsModalOpenSell(false)}
+      >
+        <Form
+          ref={formRefSell}
+          disabled={loading}
+          name="basic"
+          labelAlign="left"
+          labelCol={{ span: 6 }}
+          wrapperCol={{ span: 18 }}
+        >
+          <Form.Item
+            label="Quantity"
+            name="qty"
+            rules={[
+              { required: true, message: "Please input the xrp quantity!" },
+            ]}
+          >
+            <InputNumber placeholder="100" addonAfter="XRP" step={10} min={0} />
+          </Form.Item>
+        </Form>
+      </Modal>
+      <Modal
+        key={nft?.NFTokenID + "BUY"}
+        title="Create BUY Offer"
+        open={isModalOpenBuy}
+        onOk={() => {
+          if (!nft) return;
+
+          setIsModalOpenBuy(false);
+          setLoading(true);
+
+          wallet
+            .map((w) => (c: Client) => {
+              return c
+                .autofill({
+                  Owner: address as string,
+                  Account: w.address,
+                  TransactionType: "NFTokenCreateOffer",
+                  NFTokenID: nft.NFTokenID,
+                  // todo: custom Amount
+                  Amount: `${formRefBuy.current?.getFieldValue("qty")}`,
+                })
+                .then((prepared) => {
+                  return c.submitAndWait(w.sign(prepared).tx_blob);
+                });
+            })
+            .apTo(client)
+            .forEach((defer) => {
+              defer
+                .then((res: TxResponse) => {
+                  message.success(`TX ${res.id} Confirmed`);
+
+                  syncAccountNFTs();
+                })
+                .finally(() => {
+                  setLoading(false);
+                });
+            });
+        }}
+        onCancel={() => setIsModalOpenBuy(false)}
+      >
+        <Form
+          ref={formRefBuy}
+          disabled={loading}
+          name="basic"
+          labelAlign="left"
+          labelCol={{ span: 6 }}
+          wrapperCol={{ span: 18 }}
+        >
+          <Form.Item
+            label="Quantity"
+            name="qty"
+            rules={[
+              { required: true, message: "Please input the xrp quantity!" },
+            ]}
+          >
+            <InputNumber placeholder="100" addonAfter="XRP" step={10} min={0} />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

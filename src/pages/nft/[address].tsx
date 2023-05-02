@@ -1,35 +1,19 @@
+import { Button, Card, Col, Row, Spin, Typography, message } from "antd";
 import {
-  Button,
-  Card,
-  Col,
-  Form,
-  FormInstance,
-  InputNumber,
-  Modal,
-  Row,
-  Spin,
-  Typography,
-  message,
-} from "antd";
-import { SettingOutlined, ShareAltOutlined } from "@ant-design/icons";
+  SettingOutlined,
+  ShareAltOutlined,
+  EyeOutlined,
+} from "@ant-design/icons";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  AccountNFTsResponse,
-  AccountOffersResponse,
-  Client,
-  NFTBuyOffersResponse,
-  NFTSellOffersResponse,
-  NFTokenCreateOfferFlags,
-  TxResponse,
-} from "xrpl";
+import { Client, TxResponse } from "xrpl";
 
 import {
   useWeb3Storage,
   useXrpLedgerClient,
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
-import { ArrayElement } from "~/types";
+import { NFTokenPage, NFToken } from "~/types";
 import { hexDecode } from "~/utils";
 
 export default function NFT() {
@@ -40,85 +24,69 @@ export default function NFT() {
   const { wallet } = useXrpLedgerWallet();
   const { web3Storage } = useWeb3Storage();
 
-  const [nfts, setNFTs] = useState<
-    Array<
-      ArrayElement<AccountNFTsResponse["result"]["account_nfts"]> & {
-        sellOffers: NFTSellOffersResponse["result"]["offers"];
-        buyOffers: NFTBuyOffersResponse["result"]["offers"];
-      }
-    >
-  >([]);
-  const [nft, setNFT] = useState<
-    ArrayElement<AccountNFTsResponse["result"]["account_nfts"]> & {
-      sellOffers: NFTSellOffersResponse["result"]["offers"];
-      buyOffers: NFTBuyOffersResponse["result"]["offers"];
-    }
-  >();
-
-  const syncAccountNFTs = useCallback(() => {
-    wallet
-      .map(
-        (w) => (c: Client) =>
-          c
-            .request({
-              command: "account_nfts",
-              account: address as string,
-            })
-            .then((res) => {
-              return Promise.all(
-                res.result.account_nfts.map((nft) => {
-                  return Promise.all([
-                    c
-                      .request({
-                        command: "nft_sell_offers",
-                        nft_id: nft.NFTokenID,
-                      })
-                      .catch(() => {
-                        return {
-                          result: {
-                            offers: [],
-                          },
-                        };
-                      }),
-                    c
-                      .request({
-                        command: "nft_buy_offers",
-                        nft_id: nft.NFTokenID,
-                      })
-                      .catch(() => ({
-                        result: {
-                          offers: [],
-                        },
-                      })),
-                    ,
-                  ]).then(([sellOffers, buyOffers]) => {
-                    return {
-                      ...nft,
-                      sellOffers: sellOffers.result.offers,
-                      buyOffers: buyOffers.result.offers,
-                    };
-                  });
-                })
-              );
-            })
-      )
-      .apTo(client)
-      .forEach((defer) => {
-        defer.then((res) => {
-          setNFTs(res);
-        });
-      });
-  }, [client, wallet, address]);
-
-  // init logic when comp is mounted
-  useEffect(() => {
-    syncAccountNFTs();
-  }, [syncAccountNFTs]);
+  const [nftPage, setNftPage] = useState<NFTokenPage>();
+  const [nfts, setNFTs] = useState<Array<NFToken>>([]);
 
   const isSelf = wallet.every((w) => w.address === address);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const formRef = useRef<FormInstance>(null);
+  const syncAccountNFTs = useCallback(
+    (nftPageId: string) => {
+      if (isSelf) {
+        wallet
+          .map(
+            (w) => (c: Client) =>
+              c
+                .request({
+                  command: "ledger_entry",
+                  nft_page: nftPageId,
+                  ledger_index: "validated",
+                })
+                .then((res) => {
+                  // @ts-ignore
+                  return res.result.node as NFTokenPage;
+                })
+          )
+          .apTo(client)
+          .forEach((defer) => {
+            defer.then((res) => {
+              setNftPage(res);
+              setNFTs(res.NFTokens.map((t) => t.NFToken));
+            });
+          });
+      } else {
+        wallet
+          .map(
+            (w) => (c: Client) =>
+              c.request({
+                command: "account_nfts",
+                account: address as string,
+                ledger_index: "validated",
+              })
+          )
+          .apTo(client)
+          .forEach((defer) => {
+            defer.then((res) => {
+              setNFTs(res.result.account_nfts);
+            });
+          });
+      }
+    },
+    [client, wallet, isSelf]
+  );
+
+  // init logic when comp is mounted
+  useEffect(() => {
+    wallet
+      .map(
+        (w) => (c: Client) =>
+          fetch(`/api/account-id?pubKey=${w.publicKey}`)
+            .then((res) => res.json())
+            .then(({ account_id }) => {
+              return syncAccountNFTs(`${account_id}FFFFFFFFFFFFFFFFFFFFFFFF`);
+            })
+      )
+      .apTo(client);
+  }, [client, syncAccountNFTs, wallet]);
 
   return (
     <div>
@@ -148,7 +116,7 @@ export default function NFT() {
             : "";
 
           return (
-            <Col className="mb-4" key={nft.NFTokenID} span={8}>
+            <Col className="mb-4" key={nft.NFTokenID} span={6}>
               <Card
                 cover={
                   nft.URI ? (
@@ -176,13 +144,11 @@ export default function NFT() {
                     <Button
                       type="link"
                       key="buy"
+                      icon={<EyeOutlined />}
                       onClick={() => {
-                        setNFT(nft);
-                        setIsModalOpen(true);
+                        router.push(`${router.asPath}/${nft.NFTokenID}`);
                       }}
-                    >
-                      BUY
-                    </Button>
+                    />
                   ),
                   <Button
                     type="link"
@@ -201,63 +167,23 @@ export default function NFT() {
           );
         })}
       </Row>
-      <Modal
-        key={nft?.NFTokenID}
-        title="Create BUY Offer"
-        open={isModalOpen}
-        onOk={() => {
-          if (!nft) return;
-
-          setIsModalOpen(false);
-          setLoading(true);
-
-          wallet
-            .map((w) => (c: Client) => {
-              return c
-                .autofill({
-                  Owner: address as string,
-                  Account: w.address,
-                  TransactionType: "NFTokenCreateOffer",
-                  NFTokenID: nft.NFTokenID,
-                  // todo: custom Amount
-                  Amount: `${formRef.current?.getFieldValue("qty")}`,
-                })
-                .then((prepared) => {
-                  return c.submitAndWait(w.sign(prepared).tx_blob);
-                });
-            })
-            .apTo(client)
-            .forEach((defer) => {
-              defer
-                .then((res: TxResponse) => {
-                  message.success(`TX ${res.id} Confirmed`);
-                })
-                .finally(() => {
-                  setLoading(false);
-                });
-            });
-        }}
-        onCancel={() => setIsModalOpen(false)}
-      >
-        <Form
-          ref={formRef}
-          disabled={loading}
-          name="basic"
-          labelAlign="left"
-          labelCol={{ span: 6 }}
-          wrapperCol={{ span: 18 }}
-        >
-          <Form.Item
-            label="Quantity"
-            name="qty"
-            rules={[
-              { required: true, message: "Please input the xrp quantity!" },
-            ]}
+      <Row hidden={!isSelf} gutter={16}>
+        <Col span={8} offset={8} className="text-center">
+          <Button
+            onClick={() => syncAccountNFTs(nftPage?.NextPageMin!)}
+            disabled={!nftPage?.NextPageMin}
+            className="mr-4"
           >
-            <InputNumber placeholder="100" addonAfter="XRP" step={10} min={0} />
-          </Form.Item>
-        </Form>
-      </Modal>
+            Prev
+          </Button>
+          <Button
+            onClick={() => syncAccountNFTs(nftPage?.PreviousPageMin!)}
+            disabled={!nftPage?.PreviousPageMin}
+          >
+            Next
+          </Button>
+        </Col>
+      </Row>
     </div>
   );
 }
