@@ -201,42 +201,45 @@ export default function NFTDetail() {
 
                     wallet
                       .map((w) => (c: Client) => {
-                        return Promise.all([
-                          c
-                            .autofill(
-                              isSelf
-                                ? {
-                                    Account: w.address,
-                                    TransactionType: "NFTokenAcceptOffer",
-                                    NFTokenBuyOffer: buyOffer?.nft_offer_index,
-                                  }
-                                : {
-                                    Account: w.address,
-                                    TransactionType: "NFTokenAcceptOffer",
-                                    NFTokenSellOffer:
-                                      sellOffer?.nft_offer_index,
-                                  }
-                            )
-                            .then((prepared) => {
-                              return c.submitAndWait(w.sign(prepared).tx_blob);
-                            }),
-                          c
-                            .autofill({
-                              Account: w.address,
-                              TransactionType: "NFTokenCancelOffer",
-                              NFTokenOffers: nft.sellOffers.map(
-                                (o) => o.nft_offer_index
-                              ),
-                            })
-                            .then((prepared) => {
-                              return c.submit(w.sign(prepared).tx_blob);
-                            }),
-                        ]);
+                        return c
+                          .autofill({
+                            Account: w.address,
+                            TransactionType: "NFTokenCancelOffer",
+                            NFTokenOffers: nft.sellOffers.map(
+                              (o) => o.nft_offer_index
+                            ),
+                          })
+                          .then((prepared) => {
+                            return c.submitAndWait(w.sign(prepared).tx_blob);
+                          })
+                          .then(() => {
+                            return c
+                              .autofill(
+                                isSelf
+                                  ? {
+                                      Account: w.address,
+                                      TransactionType: "NFTokenAcceptOffer",
+                                      NFTokenBuyOffer:
+                                        buyOffer?.nft_offer_index,
+                                    }
+                                  : {
+                                      Account: w.address,
+                                      TransactionType: "NFTokenAcceptOffer",
+                                      NFTokenSellOffer:
+                                        sellOffer?.nft_offer_index,
+                                    }
+                              )
+                              .then((prepared) => {
+                                return c.submitAndWait(
+                                  w.sign(prepared).tx_blob
+                                );
+                              });
+                          });
                       })
                       .apTo(client)
                       .forEach((defer) => {
                         defer
-                          .then(([res]) => {
+                          .then((res) => {
                             message.success(`TX ${res.id} Confirmed`);
 
                             router.push(
