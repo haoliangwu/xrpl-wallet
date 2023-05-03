@@ -26,6 +26,8 @@ import {
   NFTSellOffersResponse,
   NFTokenCreateOfferFlags,
   TxResponse,
+  dropsToXrp,
+  xrpToDrops,
 } from "xrpl";
 
 import {
@@ -334,7 +336,7 @@ export default function NFTDetail() {
                     <Typography.Text>{item.nft_offer_index}</Typography.Text>
                   </div>
                   <Typography.Text mark>
-                    {item.amount.toString()}
+                    {dropsToXrp(item.amount.toString())}
                   </Typography.Text>
                   <span className="mx-1">XRP /</span>
                   <Typography.Text>{item.owner}</Typography.Text>
@@ -368,7 +370,7 @@ export default function NFTDetail() {
                     />
                   </div>
                   <Typography.Text mark>
-                    {item.amount.toString()}
+                    {dropsToXrp(item.amount.toString())}
                   </Typography.Text>
                   <span className="mx-1">XRP /</span>
                   <Typography.Text>{item.owner}</Typography.Text>
@@ -395,7 +397,7 @@ export default function NFTDetail() {
                   Account: w.address,
                   TransactionType: "NFTokenCreateOffer",
                   NFTokenID: nft.NFTokenID,
-                  Amount: `${formRefSell.current?.getFieldValue("qty")}`,
+                  Amount: xrpToDrops(formRefSell.current?.getFieldValue("qty")),
                   Flags: NFTokenCreateOfferFlags.tfSellNFToken,
                   // todo: it is better to be broker
                   Destination: "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -458,7 +460,7 @@ export default function NFTDetail() {
                   Account: w.address,
                   TransactionType: "NFTokenCreateOffer",
                   NFTokenID: nft.NFTokenID,
-                  Amount: `${formRefBuy.current?.getFieldValue("qty")}`,
+                  Amount: xrpToDrops(formRefBuy.current?.getFieldValue("qty")),
                   // todo: it could be customized
                   Expiration: resolveTxExpiration(3600 * 24 * 7),
                 })
