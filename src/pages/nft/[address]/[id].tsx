@@ -145,59 +145,6 @@ export default function NFTDetail() {
       <Row>
         {isSelf ? (
           <Col span={24} className="text-right">
-            {nft?.sellOffers && nft?.sellOffers.length > 0 ? (
-              <Popconfirm
-                title="Are you sure ?"
-                okText="Yes"
-                cancelText="No"
-                onConfirm={() => {
-                  setLoading(true);
-
-                  wallet
-                    .map((w) => (c: Client) => {
-                      return c
-                        .autofill(
-                          isSelf
-                            ? {
-                                Account: w.address,
-                                TransactionType: "NFTokenAcceptOffer",
-                                NFTokenBuyOffer: buyOffer?.nft_offer_index,
-                              }
-                            : {
-                                Account: w.address,
-                                TransactionType: "NFTokenAcceptOffer",
-                                NFTokenSellOffer: sellOffer?.nft_offer_index,
-                              }
-                        )
-                        .then((prepared) => {
-                          return c.submitAndWait(w.sign(prepared).tx_blob);
-                        });
-                    })
-                    .apTo(client)
-                    .forEach((defer) => {
-                      defer
-                        .then((res: TxResponse) => {
-                          message.success(`TX ${res.id} Confirmed`);
-
-                          router.push(
-                            `/nft/${wallet.map((w) => w.address).orSome("")}`
-                          );
-                        })
-                        .finally(() => {
-                          setLoading(false);
-                        });
-                    });
-                }}
-              >
-                <Button disabled={!buyOffer} type="primary">
-                  Accept
-                </Button>
-              </Popconfirm>
-            ) : (
-              <Button type="primary" onClick={() => setIsModalOpenSell(true)}>
-                SELL
-              </Button>
-            )}
             <Popconfirm
               title="Are you sure ?"
               onConfirm={() => {
@@ -237,6 +184,98 @@ export default function NFTDetail() {
                 Burn
               </Button>
             </Popconfirm>
+            {nft?.sellOffers && nft?.sellOffers.length > 0 ? (
+              <>
+                <Popconfirm
+                  title="Are you sure ?"
+                  okText="Yes"
+                  cancelText="No"
+                  onConfirm={() => {
+                    setLoading(true);
+
+                    wallet
+                      .map((w) => (c: Client) => {
+                        return c
+                          .autofill(
+                            isSelf
+                              ? {
+                                  Account: w.address,
+                                  TransactionType: "NFTokenAcceptOffer",
+                                  NFTokenBuyOffer: buyOffer?.nft_offer_index,
+                                }
+                              : {
+                                  Account: w.address,
+                                  TransactionType: "NFTokenAcceptOffer",
+                                  NFTokenSellOffer: sellOffer?.nft_offer_index,
+                                }
+                          )
+                          .then((prepared) => {
+                            return c.submitAndWait(w.sign(prepared).tx_blob);
+                          });
+                      })
+                      .apTo(client)
+                      .forEach((defer) => {
+                        defer
+                          .then((res: TxResponse) => {
+                            message.success(`TX ${res.id} Confirmed`);
+
+                            router.push(
+                              `/nft/${wallet.map((w) => w.address).orSome("")}`
+                            );
+                          })
+                          .finally(() => {
+                            setLoading(false);
+                          });
+                      });
+                  }}
+                >
+                  <Button className="ml-2" disabled={!buyOffer} type="primary">
+                    Accept
+                  </Button>
+                </Popconfirm>
+                <Popconfirm
+                  title="Are you sure ?"
+                  okText="Yes"
+                  cancelText="No"
+                  onConfirm={() => {
+                    setLoading(true);
+
+                    wallet
+                      .map((w) => (c: Client) => {
+                        return c
+                          .autofill({
+                            Account: w.address,
+                            TransactionType: "NFTokenCancelOffer",
+                            NFTokenOffers: nft.sellOffers.map(
+                              (o) => o.nft_offer_index
+                            ),
+                          })
+                          .then((prepared) => {
+                            return c.submitAndWait(w.sign(prepared).tx_blob);
+                          });
+                      })
+                      .apTo(client)
+                      .forEach((defer) => {
+                        defer
+                          .then((res: TxResponse) => {
+                            message.success(`TX ${res.id} Confirmed`);
+
+                            syncAccountNFTs();
+                          })
+                          .finally(() => {
+                            setLoading(false);
+                          });
+                      });
+                  }}
+                >
+                  <Button className="ml-2">Cancel</Button>
+                </Popconfirm>
+              </>
+            ) : (
+              <Button className="ml-2" type="primary" onClick={() => setIsModalOpenSell(true)}>
+                SELL
+              </Button>
+            )}
           </Col>
         ) : (
           <Col span={24} className="text-right">
