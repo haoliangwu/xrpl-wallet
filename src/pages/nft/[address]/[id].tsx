@@ -74,7 +74,12 @@ export default function NFTDetail() {
               res.result.account_nfts.find((ntf) => ntf.NFTokenID === id)
             )
             .then((nft) => {
-              if (!nft) return Promise.reject("not found ntf object");
+              if (!nft)
+                return Promise.reject(
+                  new Error(
+                    "The current NFT not found or belongs to current owner"
+                  )
+                );
 
               return Promise.all([
                 c
@@ -111,11 +116,17 @@ export default function NFTDetail() {
       )
       .apTo(client)
       .forEach((defer) => {
-        defer.then((res) => {
-          setNFT(res);
-        });
+        defer
+          .then((res) => {
+            setNFT(res);
+          })
+          .catch((err: Error) => {
+            message.error(err.message);
+
+            router.push(`/nft/${wallet.map((w) => w.address).some()}`);
+          });
       });
-  }, [wallet, client, address, id]);
+  }, [wallet, client, address, id, router]);
 
   // init logic when comp is mounted
   useEffect(() => {
@@ -201,40 +212,43 @@ export default function NFTDetail() {
 
                     wallet
                       .map((w) => (c: Client) => {
-                        return c
-                          .autofill(
-                            isSelf
-                              ? {
+                        return (
+                          c
+                            .autofill(
+                              isSelf
+                                ? {
+                                    Account: w.address,
+                                    TransactionType: "NFTokenAcceptOffer",
+                                    NFTokenBuyOffer: buyOffer?.nft_offer_index,
+                                  }
+                                : {
+                                    Account: w.address,
+                                    TransactionType: "NFTokenAcceptOffer",
+                                    NFTokenSellOffer:
+                                      sellOffer?.nft_offer_index,
+                                  }
+                            )
+                            .then((prepared) => {
+                              return c.submitAndWait(w.sign(prepared).tx_blob);
+                            })
+                            // cancel all legacy offers
+                            .then(() => {
+                              return c
+                                .autofill({
                                   Account: w.address,
-                                  TransactionType: "NFTokenAcceptOffer",
-                                  NFTokenBuyOffer: buyOffer?.nft_offer_index,
-                                }
-                              : {
-                                  Account: w.address,
-                                  TransactionType: "NFTokenAcceptOffer",
-                                  NFTokenSellOffer: sellOffer?.nft_offer_index,
-                                }
-                          )
-                          .then((prepared) => {
-                            return c.submitAndWait(w.sign(prepared).tx_blob);
-                          })
-                          // cancel all legacy offers
-                          .then(() => {
-                            return c
-                              .autofill({
-                                Account: w.address,
-                                TransactionType: "NFTokenCancelOffer",
-                                NFTokenOffers: [
-                                  ...nft.sellOffers,
-                                  ...nft.buyOffers,
-                                ].map((o) => o.nft_offer_index),
-                              })
-                              .then((prepared) => {
-                                return c.submitAndWait(
-                                  w.sign(prepared).tx_blob
-                                );
-                              });
-                          });
+                                  TransactionType: "NFTokenCancelOffer",
+                                  NFTokenOffers: [
+                                    ...nft.sellOffers,
+                                    ...nft.buyOffers,
+                                  ].map((o) => o.nft_offer_index),
+                                })
+                                .then((prepared) => {
+                                  return c.submitAndWait(
+                                    w.sign(prepared).tx_blob
+                                  );
+                                });
+                            })
+                        );
                       })
                       .apTo(client)
                       .forEach((defer) => {
