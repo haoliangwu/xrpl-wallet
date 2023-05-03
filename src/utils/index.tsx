@@ -22,3 +22,6 @@ export const hexDecode = (hexStr: string) => {
 
   return back;
 };
+
+export const resolveTxExpiration = (offset: number) =>
+  Number.parseInt((Date.now() / 1000 + 946684800 + offset).toFixed(0));

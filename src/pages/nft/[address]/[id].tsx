@@ -34,7 +34,7 @@ import {
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
 import { ArrayElement } from "~/types";
-import { hexDecode } from "~/utils";
+import { hexDecode, resolveTxExpiration } from "~/utils";
 import ScannerText from "~/components/ScannerText";
 
 export default function NFTDetail() {
@@ -396,9 +396,11 @@ export default function NFTDetail() {
                   TransactionType: "NFTokenCreateOffer",
                   NFTokenID: nft.NFTokenID,
                   Amount: `${formRefSell.current?.getFieldValue("qty")}`,
-                  // todo: should be broker
-                  Destination: "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
                   Flags: NFTokenCreateOfferFlags.tfSellNFToken,
+                  // todo: it is better to be broker
+                  Destination: "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+                  // todo: it could be customized
+                  Expiration: resolveTxExpiration(3600 * 24 * 7),
                 })
                 .then((prepared) => {
                   return c.submitAndWait(w.sign(prepared).tx_blob);
@@ -456,8 +458,9 @@ export default function NFTDetail() {
                   Account: w.address,
                   TransactionType: "NFTokenCreateOffer",
                   NFTokenID: nft.NFTokenID,
-                  // todo: custom Amount
                   Amount: `${formRefBuy.current?.getFieldValue("qty")}`,
+                  // todo: it could be customized
+                  Expiration: resolveTxExpiration(3600 * 24 * 7),
                 })
                 .then((prepared) => {
                   return c.submitAndWait(w.sign(prepared).tx_blob);
