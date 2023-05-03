@@ -202,33 +202,33 @@ export default function NFTDetail() {
                     wallet
                       .map((w) => (c: Client) => {
                         return c
-                          .autofill({
-                            Account: w.address,
-                            TransactionType: "NFTokenCancelOffer",
-                            NFTokenOffers: nft.sellOffers.map(
-                              (o) => o.nft_offer_index
-                            ),
-                          })
+                          .autofill(
+                            isSelf
+                              ? {
+                                  Account: w.address,
+                                  TransactionType: "NFTokenAcceptOffer",
+                                  NFTokenBuyOffer: buyOffer?.nft_offer_index,
+                                }
+                              : {
+                                  Account: w.address,
+                                  TransactionType: "NFTokenAcceptOffer",
+                                  NFTokenSellOffer: sellOffer?.nft_offer_index,
+                                }
+                          )
                           .then((prepared) => {
                             return c.submitAndWait(w.sign(prepared).tx_blob);
                           })
+                          // cancel all legacy offers
                           .then(() => {
                             return c
-                              .autofill(
-                                isSelf
-                                  ? {
-                                      Account: w.address,
-                                      TransactionType: "NFTokenAcceptOffer",
-                                      NFTokenBuyOffer:
-                                        buyOffer?.nft_offer_index,
-                                    }
-                                  : {
-                                      Account: w.address,
-                                      TransactionType: "NFTokenAcceptOffer",
-                                      NFTokenSellOffer:
-                                        sellOffer?.nft_offer_index,
-                                    }
-                              )
+                              .autofill({
+                                Account: w.address,
+                                TransactionType: "NFTokenCancelOffer",
+                                NFTokenOffers: [
+                                  ...nft.sellOffers,
+                                  ...nft.buyOffers,
+                                ].map((o) => o.nft_offer_index),
+                              })
                               .then((prepared) => {
                                 return c.submitAndWait(
                                   w.sign(prepared).tx_blob
@@ -464,6 +464,7 @@ export default function NFTDetail() {
                   TransactionType: "NFTokenCreateOffer",
                   NFTokenID: nft.NFTokenID,
                   Amount: xrpToDrops(formRefBuy.current?.getFieldValue("qty")),
+                  Destination: address as string,
                   // todo: it could be customized
                   Expiration: resolveTxExpiration(3600 * 24 * 7),
                 })
