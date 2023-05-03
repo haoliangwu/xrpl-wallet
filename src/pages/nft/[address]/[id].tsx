@@ -35,6 +35,7 @@ import {
 } from "~/hooks/useXrpLedgerHook";
 import { ArrayElement } from "~/types";
 import { hexDecode } from "~/utils";
+import ScannerText from "~/components/ScannerText";
 
 export default function NFTDetail() {
   const router = useRouter();
@@ -138,7 +139,13 @@ export default function NFTDetail() {
       <Row>
         <Col span={16}>
           <Typography.Title level={3}>
-            NFT <Typography.Text>/ {id}</Typography.Text>
+            NFT{" "}
+            <Typography.Text>
+              /{" "}
+              <ScannerText href={`/nft/${id}`}>
+                {id}
+              </ScannerText>
+            </Typography.Text>
           </Typography.Title>
         </Col>
       </Row>
@@ -272,7 +279,11 @@ export default function NFTDetail() {
                 </Popconfirm>
               </>
             ) : (
-              <Button className="ml-2" type="primary" onClick={() => setIsModalOpenSell(true)}>
+              <Button
+                className="ml-2"
+                type="primary"
+                onClick={() => setIsModalOpenSell(true)}
+              >
                 SELL
               </Button>
             )}

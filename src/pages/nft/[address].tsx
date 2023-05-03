@@ -15,6 +15,7 @@ import {
 } from "~/hooks/useXrpLedgerHook";
 import { NFTokenPage, NFToken } from "~/types";
 import { hexDecode } from "~/utils";
+import ScannerText from "~/components/ScannerText";
 
 export default function NFT() {
   const router = useRouter();
@@ -98,7 +99,10 @@ export default function NFT() {
       <Row>
         <Col span={16}>
           <Typography.Title level={3}>
-            NFTs <Typography.Text>/ {address}</Typography.Text>
+            NFTs
+            <Typography.Text className="ml-1">
+              / <ScannerText href={`/accounts/${address}/assets/nft`}>{address}</ScannerText>
+            </Typography.Text>
           </Typography.Title>
         </Col>
         {isSelf && (

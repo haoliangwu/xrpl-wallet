@@ -18,6 +18,7 @@ import {
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
 import { hexDecode } from "~/utils";
+import ScannerText from "~/components/ScannerText";
 
 export default function Home() {
   const router = useRouter();
@@ -156,10 +157,20 @@ export default function Home() {
 
             return (
               <div
-                className="px-4 py-2 border-b-1 border-b-#d6d9dc border-b-solid"
+                className="px-4 py-2 border-b-1 border-b-#d6d9dc border-b-solid mb-1"
                 key={tx?.hash}
               >
                 <div className="flex">
+                  <span className="mr-2">Tx Hash</span>
+                  <span className="flex-auto"></span>
+                  <ScannerText
+                    className="text-xs"
+                    href={`/transactions/${tx?.hash}`}
+                  >
+                    {tx?.hash}
+                  </ScannerText>
+                </div>
+                <div className="flex mt-1">
                   <span className="mr-2">{tx?.TransactionType}</span>
                   <span className="flex-auto"></span>
                   {tx?.TransactionType === "Payment" && (
@@ -169,17 +180,14 @@ export default function Home() {
                     </Typography.Text>
                   )}
                   {tx?.TransactionType === "NFTokenMint" && (
-                    <Typography.Text copyable>
+                    <ScannerText
+                      className="text-xs"
+                      type="ipfs"
+                      href={`/${hexDecode(tx.URI ?? "")}`}
+                    >
                       {hexDecode(tx.URI ?? "-")}
-                    </Typography.Text>
+                    </ScannerText>
                   )}
-                </div>
-                <div className="flex">
-                  <span className="mr-2">Tx Hash</span>
-                  <span className="flex-auto"></span>
-                  <Typography.Text copyable={{ text: tx?.hash }}>
-                    {tx?.hash}
-                  </Typography.Text>
                 </div>
               </div>
             );
