@@ -15,6 +15,7 @@ import {
   NFTokenMintFlags,
   Payment,
   TxResponse,
+  convertStringToHex,
   dropsToXrp,
   xrpToDrops,
 } from "xrpl";
@@ -25,7 +26,7 @@ import {
   useXrpLedgerClient,
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
-import { hexEncode, generateNFTokenTaxon } from "~/utils";
+import { generateNFTokenTaxon } from "~/utils";
 
 const onFinishFailed = (errorInfo: any) => {
   console.error("Failed:", errorInfo);
@@ -78,20 +79,20 @@ export default function CreateNFT() {
                       // todo: need to bind NFTokenMinter to AccountRoot
                       // Issuer: w.address,
                       Flags: NFTokenMintFlags.tfTransferable,
-                      URI: hexEncode(
+                      URI: convertStringToHex(
                         encodeURI(`${cid.toString()}/${attachment[0].name}`)
                       ),
                       Memos: [
                         {
                           Memo: {
-                            MemoType: hexEncode(encodeURI("nftName")),
-                            MemoData: hexEncode(encodeURI(values.name)),
+                            MemoType: convertStringToHex(encodeURI("nftName")),
+                            MemoData: convertStringToHex(encodeURI(values.name)),
                           },
                         },
                         {
                           Memo: {
-                            MemoType: hexEncode(encodeURI("mimetype")),
-                            MemoData: hexEncode(encodeURI(attachment.type)),
+                            MemoType: convertStringToHex(encodeURI("mimetype")),
+                            MemoData: convertStringToHex(encodeURI(attachment.type)),
                           },
                         },
                       ],

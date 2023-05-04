@@ -26,6 +26,7 @@ import {
   NFTSellOffersResponse,
   NFTokenCreateOfferFlags,
   TxResponse,
+  convertHexToString,
   dropsToXrp,
   xrpToDrops,
 } from "xrpl";
@@ -36,7 +37,7 @@ import {
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
 import { ArrayElement } from "~/types";
-import { hexDecode, resolveTxExpiration } from "~/utils";
+import { resolveTxExpiration } from "~/utils";
 import ScannerText from "~/components/ScannerText";
 
 export default function NFTDetail() {
@@ -139,7 +140,7 @@ export default function NFTDetail() {
   const formRefBuy = useRef<FormInstance>(null);
 
   const normalizedUri = nft?.URI
-    ? `https://ipfs.io/ipfs/${hexDecode(nft.URI)}`
+    ? `https://ipfs.io/ipfs/${convertHexToString(nft.URI)}`
     : "";
 
   return (

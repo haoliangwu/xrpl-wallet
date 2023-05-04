@@ -6,7 +6,7 @@ import {
 } from "@ant-design/icons";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Client, TxResponse } from "xrpl";
+import { Client, TxResponse, convertHexToString } from "xrpl";
 
 import {
   useWeb3Storage,
@@ -14,7 +14,6 @@ import {
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
 import { NFTokenPage, NFToken } from "~/types";
-import { hexDecode } from "~/utils";
 import ScannerText from "~/components/ScannerText";
 
 export default function NFT() {
@@ -116,7 +115,7 @@ export default function NFT() {
       <Row gutter={16}>
         {nfts.map((nft) => {
           const normalizedUri = nft.URI
-            ? `https://ipfs.io/ipfs/${hexDecode(nft.URI)}`
+            ? `https://ipfs.io/ipfs/${convertHexToString(nft.URI)}`
             : "";
 
           return (

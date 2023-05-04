@@ -8,6 +8,7 @@ import {
   AccountTxResponse,
   Payment,
   Client,
+  convertHexToString,
 } from "xrpl";
 import { useRouter } from "next/router";
 import { Maybe } from "monet";
@@ -17,7 +18,6 @@ import {
   useXrpLedgerClient,
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
-import { hexDecode } from "~/utils";
 import ScannerText from "~/components/ScannerText";
 
 export default function Home() {
@@ -183,9 +183,9 @@ export default function Home() {
                     <ScannerText
                       className="text-xs"
                       type="ipfs"
-                      href={`/${hexDecode(tx.URI ?? "")}`}
+                      href={`/${convertHexToString(tx.URI ?? "")}`}
                     >
-                      {hexDecode(tx.URI ?? "-")}
+                      {convertHexToString(tx.URI ?? "-")}
                     </ScannerText>
                   )}
                 </div>
