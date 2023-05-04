@@ -71,7 +71,7 @@ export default function NFT() {
           });
       }
     },
-    [client, wallet, isSelf]
+    [isSelf, wallet, client, address]
   );
 
   // init logic when comp is mounted

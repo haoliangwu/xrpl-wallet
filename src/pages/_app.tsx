@@ -41,6 +41,7 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
         <div>
           <Select
             value={network}
+            // todo: also change cilo server network
             onChange={(v) => setNetwork(v)}
             options={[
               {

@@ -24,7 +24,7 @@ export const DEFAULT_CTX_VALUE: XrpLedgerContext = {
   ciloClient: Maybe.None(),
   wallet: Maybe.None(),
   network: "wss://s.altnet.rippletest.net:51233",
-  ciloNetwork: "wss://clio.altnet.rippletest.net:51233/",
+  ciloNetwork: "wss://clio.altnet.rippletest.net:51233",
   wallets: [],
   setNetwork: () => {},
   setCiloNetwork: () => {},
