@@ -100,7 +100,10 @@ export default function NFT() {
           <Typography.Title level={3}>
             NFTs
             <Typography.Text className="ml-1">
-              / <ScannerText href={`/accounts/${address}/assets/nft`}>{address}</ScannerText>
+              /{" "}
+              <ScannerText href={`/accounts/${address}/assets/nft`}>
+                {address}
+              </ScannerText>
             </Typography.Text>
           </Typography.Title>
         </Col>
@@ -115,7 +118,7 @@ export default function NFT() {
       <Row gutter={16}>
         {nfts.map((nft) => {
           const normalizedUri = nft.URI
-            ? `https://ipfs.io/ipfs/${convertHexToString(nft.URI)}`
+            ? `https://ipfs.io/ipfs/${convertHexToString(nft.URI ?? "")}`
             : "";
 
           return (

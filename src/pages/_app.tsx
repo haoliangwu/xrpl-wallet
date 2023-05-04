@@ -117,10 +117,12 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [network, setNetwork] = useState(DEFAULT_CTX_VALUE.network);
+  const [ciloNetwork, setCiloNetwork] = useState(DEFAULT_CTX_VALUE.ciloNetwork);
   const [web3Storage, setWeb3Storage] = useState<Maybe<Web3Storage>>(
     Maybe.None()
   );
   const [client, setClient] = useState<Maybe<Client>>(Maybe.None());
+  const [ciloClient, setCiloClient] = useState<Maybe<Client>>(Maybe.None());
   const [wallet, setWallet] = useState<Maybe<Wallet>>(Maybe.None());
   const [wallets, setWallets] = useState<Wallet[]>([]);
 
@@ -152,6 +154,20 @@ function MyApp({ Component, pageProps }: AppProps) {
   }, [network]);
 
   useEffect(() => {
+    const _client = new Client(ciloNetwork);
+
+    _client.connect().then(() => {
+      setCiloClient(Maybe.Some(_client));
+    });
+
+    return () => {
+      _client.disconnect().then(() => {
+        setCiloClient(Maybe.None());
+      });
+    };
+  }, [ciloNetwork]);
+
+  useEffect(() => {
     setWeb3Storage(
       Maybe.Some(
         new Web3Storage({
@@ -165,19 +181,22 @@ function MyApp({ Component, pageProps }: AppProps) {
     return {
       web3Storage,
       client,
+      ciloClient,
       wallet,
       wallets,
       network,
       setNetwork,
+      ciloNetwork,
+      setCiloNetwork,
       setWallet,
       setWallets,
     };
-  }, [web3Storage, client, wallet, wallets, network]);
+  }, [web3Storage, client, ciloClient, wallet, wallets, network, ciloNetwork]);
 
   // @ts-ignore
   const getLayout = Component.getLayout;
 
-  return client.isSome() ? (
+  return client.isSome() && ciloClient.isSome() ? (
     <XrpLedgerContext.Provider value={ctx}>
       {getLayout ? (
         getLayout(<Component {...pageProps} />)

@@ -1,6 +1,5 @@
 import {
   Button,
-  Card,
   Col,
   Row,
   Spin,
@@ -8,25 +7,20 @@ import {
   message,
   List,
   Checkbox,
-  Divider,
   Popconfirm,
   FormInstance,
   Modal,
   Form,
   InputNumber,
 } from "antd";
-import { SettingOutlined, ShareAltOutlined } from "@ant-design/icons";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  AccountNFTsResponse,
-  AccountOffersResponse,
   Client,
   NFTBuyOffersResponse,
   NFTSellOffersResponse,
   NFTokenCreateOfferFlags,
   TxResponse,
-  convertHexToString,
   dropsToXrp,
   xrpToDrops,
 } from "xrpl";
@@ -36,7 +30,7 @@ import {
   useXrpLedgerClient,
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
-import { ArrayElement } from "~/types";
+import { ArrayElement, CiloNFTokenResponse } from "~/types";
 import { resolveTxExpiration } from "~/utils";
 import ScannerText from "~/components/ScannerText";
 
@@ -44,7 +38,7 @@ export default function NFTDetail() {
   const router = useRouter();
   const { address, id } = router.query;
   const [loading, setLoading] = useState(false);
-  const { client } = useXrpLedgerClient();
+  const { client, ciloClient } = useXrpLedgerClient();
   const { wallet } = useXrpLedgerWallet();
   const { web3Storage } = useWeb3Storage();
 
@@ -54,7 +48,7 @@ export default function NFTDetail() {
     useState<ArrayElement<NFTSellOffersResponse["result"]["offers"]>>();
 
   const [nft, setNFT] = useState<
-    ArrayElement<AccountNFTsResponse["result"]["account_nfts"]> & {
+    CiloNFTokenResponse["result"] & {
       sellOffers: NFTSellOffersResponse["result"]["offers"];
       buyOffers: NFTBuyOffersResponse["result"]["offers"];
     }
@@ -65,15 +59,13 @@ export default function NFTDetail() {
   const syncAccountNFTs = useCallback(() => {
     wallet
       .map(
-        (w) => (c: Client) =>
-          c
+        (w) => (c: Client) => (cilo: Client) =>
+          cilo
             .request({
-              command: "account_nfts",
-              account: address as string,
+              command: "nft_info",
+              nft_id: id,
             })
-            .then((res) =>
-              res.result.account_nfts.find((ntf) => ntf.NFTokenID === id)
-            )
+            .then((res) => (res as CiloNFTokenResponse).result)
             .then((nft) => {
               if (!nft)
                 return Promise.reject(
@@ -86,7 +78,7 @@ export default function NFTDetail() {
                 c
                   .request({
                     command: "nft_sell_offers",
-                    nft_id: nft.NFTokenID,
+                    nft_id: nft.nft_id,
                   })
                   .catch(() => {
                     return {
@@ -98,7 +90,7 @@ export default function NFTDetail() {
                 c
                   .request({
                     command: "nft_buy_offers",
-                    nft_id: nft.NFTokenID,
+                    nft_id: nft.nft_id,
                   })
                   .catch(() => ({
                     result: {
@@ -116,6 +108,7 @@ export default function NFTDetail() {
             })
       )
       .apTo(client)
+      .apTo(ciloClient)
       .forEach((defer) => {
         defer
           .then((res) => {
@@ -127,7 +120,7 @@ export default function NFTDetail() {
             router.push(`/nft/${wallet.map((w) => w.address).some()}`);
           });
       });
-  }, [wallet, client, address, id, router]);
+  }, [wallet, client, ciloClient, id, router]);
 
   // init logic when comp is mounted
   useEffect(() => {
@@ -139,9 +132,7 @@ export default function NFTDetail() {
   const [isModalOpenBuy, setIsModalOpenBuy] = useState(false);
   const formRefBuy = useRef<FormInstance>(null);
 
-  const normalizedUri = nft?.URI
-    ? `https://ipfs.io/ipfs/${convertHexToString(nft.URI)}`
-    : "";
+  const normalizedUri = nft?.uri ? `https://ipfs.io/ipfs/${nft.uri}` : "";
 
   return (
     <div>
@@ -399,7 +390,7 @@ export default function NFTDetail() {
         </Col>
       </Row>
       <Modal
-        key={nft?.NFTokenID + "SELL"}
+        key={nft?.nft_id + "SELL"}
         title="Create SELL Offer"
         open={isModalOpenSell}
         onOk={() => {
@@ -414,7 +405,7 @@ export default function NFTDetail() {
                 .autofill({
                   Account: w.address,
                   TransactionType: "NFTokenCreateOffer",
-                  NFTokenID: nft.NFTokenID,
+                  NFTokenID: nft.nft_id,
                   Amount: xrpToDrops(formRefSell.current?.getFieldValue("qty")),
                   Flags: NFTokenCreateOfferFlags.tfSellNFToken,
                   // todo: it is better to be broker
@@ -461,7 +452,7 @@ export default function NFTDetail() {
         </Form>
       </Modal>
       <Modal
-        key={nft?.NFTokenID + "BUY"}
+        key={nft?.nft_id + "BUY"}
         title="Create BUY Offer"
         open={isModalOpenBuy}
         onOk={() => {
@@ -477,7 +468,7 @@ export default function NFTDetail() {
                   Owner: address as string,
                   Account: w.address,
                   TransactionType: "NFTokenCreateOffer",
-                  NFTokenID: nft.NFTokenID,
+                  NFTokenID: nft.nft_id,
                   Amount: xrpToDrops(formRefBuy.current?.getFieldValue("qty")),
                   Destination: address as string,
                   // todo: it could be customized
