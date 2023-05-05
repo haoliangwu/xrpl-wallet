@@ -14,7 +14,7 @@ const ScannerText: React.FC<
     <div
       className={cls(
         className,
-        "flex-inline items-center gap-1 pb-1 border-b-1 border-b-solid border-b-transparent hover:border-b-#cccccc hover:cursor-pointer"
+        "flex-inline items-center gap-1 pb-1 border-b-1 border-b-solid border-b-transparent break-all hover:border-b-#cccccc hover:cursor-pointer"
       )}
       onClick={() => {
         if (type === "xrp") {

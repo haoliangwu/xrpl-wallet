@@ -160,6 +160,15 @@ export default function Home() {
                 className="px-4 py-2 border-b-1 border-b-#d6d9dc border-b-solid mb-1"
                 key={tx?.hash}
               >
+                <div className="flex mb-2">
+                  <span className="mr-2">Sequence</span>
+                  <span className="flex-auto"></span>
+                  <Typography.Text
+                    className="text-xs"
+                  >
+                    {tx?.Sequence === 0 ? `${tx.TicketSequence} (Ticket)` : tx?.Sequence}
+                  </Typography.Text>
+                </div>
                 <div className="flex">
                   <span className="mr-2">Tx Hash</span>
                   <span className="flex-auto"></span>
@@ -187,6 +196,12 @@ export default function Home() {
                     >
                       {convertHexToString(tx.URI ?? "-")}
                     </ScannerText>
+                  )}
+                  {tx?.TransactionType === "TicketCreate" && (
+                    <Typography.Text>
+                      Created {tx.TicketCount} Tickets from Sequence{" "}
+                      {tx.Sequence}
+                    </Typography.Text>
                   )}
                 </div>
               </div>
