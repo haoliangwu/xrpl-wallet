@@ -3,8 +3,10 @@ import {
   Form,
   Input,
   InputNumber,
+  Spin,
   Typography,
   Upload,
+  UploadFile,
   message,
 } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
@@ -48,8 +50,13 @@ export default function CreateNFT() {
 
   return (
     <div>
+      {loading && (
+        <div className="fixed top-0 left-0 w-100vw h-100vh z-10 bg-[rgba(123,123,123,0.5)] flex items-center justify-center">
+          <Spin />
+        </div>
+      )}
       <Typography.Title className="text-center" level={2}>
-        Mint NTF
+        Mint NFT
       </Typography.Title>
       <Form
         disabled={loading}
@@ -62,7 +69,7 @@ export default function CreateNFT() {
 
           wallet
             .map((w) => (c: Client) => (web3Storage: Web3Storage) => {
-              const attachment = values.attachment;
+              const attachment = values.attachment as UploadFile[];
               const taxon = generateNFTokenTaxon();
 
               return web3Storage
@@ -86,13 +93,17 @@ export default function CreateNFT() {
                         {
                           Memo: {
                             MemoType: convertStringToHex(encodeURI("nftName")),
-                            MemoData: convertStringToHex(encodeURI(values.name)),
+                            MemoData: convertStringToHex(
+                              encodeURI(values.name)
+                            ),
                           },
                         },
                         {
                           Memo: {
                             MemoType: convertStringToHex(encodeURI("mimetype")),
-                            MemoData: convertStringToHex(encodeURI(attachment.type)),
+                            MemoData: convertStringToHex(
+                              encodeURI(attachment[0].type ?? "")
+                            ),
                           },
                         },
                       ],

@@ -1,4 +1,4 @@
-import { Button, Card, Col, Row, Spin, Typography, message } from "antd";
+import { Button, Card, Col, Empty, Row, Spin, Typography, message } from "antd";
 import {
   SettingOutlined,
   ShareAltOutlined,
@@ -48,10 +48,14 @@ export default function NFT() {
           )
           .apTo(client)
           .forEach((defer) => {
-            defer.then((res) => {
-              setNftPage(res);
-              setNFTs(res.NFTokens.map((t) => t.NFToken));
-            });
+            defer
+              .then((res) => {
+                setNftPage(res);
+                setNFTs(res.NFTokens.map((t) => t.NFToken));
+              })
+              .catch((err: Error) => {
+                console.error(err);
+              });
           });
       } else {
         wallet
@@ -109,69 +113,82 @@ export default function NFT() {
         </Col>
         {isSelf && (
           <Col span={8} className="text-right">
+            <Button
+              className="mr-2"
+              type="primary"
+              onClick={() => router.push("/nft/create-batch")}
+            >
+              Batch Mint
+            </Button>
             <Button type="primary" onClick={() => router.push("/nft/create")}>
               Mint
             </Button>
           </Col>
         )}
       </Row>
-      <Row gutter={16}>
-        {nfts.map((nft) => {
-          const normalizedUri = nft.URI
-            ? `https://ipfs.io/ipfs/${convertHexToString(nft.URI ?? "")}`
-            : "";
+      <Row gutter={16} className="items-center my-12">
+        {nfts.length > 0 ? (
+          nfts.map((nft) => {
+            const normalizedUri = nft.URI
+              ? `https://ipfs.io/ipfs/${convertHexToString(nft.URI ?? "")}`
+              : "";
 
-          return (
-            <Col className="mb-4" key={nft.NFTokenID} span={6}>
-              <Card
-                cover={
-                  nft.URI ? (
-                    // eslint-disable-next-line
-                    <img
-                      width={300}
-                      height={200}
-                      className="object-cover"
-                      alt="nft cover"
-                      src={normalizedUri}
-                    />
-                  ) : null
-                }
-                actions={[
-                  isSelf ? (
+            return (
+              <Col className="mb-4" key={nft.NFTokenID} span={6}>
+                <Card
+                  cover={
+                    nft.URI ? (
+                      // eslint-disable-next-line
+                      <img
+                        width={300}
+                        height={200}
+                        className="object-cover"
+                        alt="nft cover"
+                        src={normalizedUri}
+                      />
+                    ) : null
+                  }
+                  actions={[
+                    isSelf ? (
+                      <Button
+                        type="link"
+                        key="sell"
+                        icon={<SettingOutlined />}
+                        onClick={() => {
+                          router.push(`${router.asPath}/${nft.NFTokenID}`);
+                        }}
+                      />
+                    ) : (
+                      <Button
+                        type="link"
+                        key="buy"
+                        icon={<EyeOutlined />}
+                        onClick={() => {
+                          router.push(`${router.asPath}/${nft.NFTokenID}`);
+                        }}
+                      />
+                    ),
                     <Button
                       type="link"
-                      key="sell"
-                      icon={<SettingOutlined />}
+                      key="link"
+                      icon={<ShareAltOutlined />}
                       onClick={() => {
-                        router.push(`${router.asPath}/${nft.NFTokenID}`);
+                        message.success("Copied!");
+                        navigator.clipboard.writeText(normalizedUri);
                       }}
-                    />
-                  ) : (
-                    <Button
-                      type="link"
-                      key="buy"
-                      icon={<EyeOutlined />}
-                      onClick={() => {
-                        router.push(`${router.asPath}/${nft.NFTokenID}`);
-                      }}
-                    />
-                  ),
-                  <Button
-                    type="link"
-                    key="link"
-                    icon={<ShareAltOutlined />}
-                    onClick={() => {
-                      message.success("Copied!");
-                      navigator.clipboard.writeText(normalizedUri);
-                    }}
-                  />,
-                ]}
-              >
-                <Card.Meta description={nft.NFTokenID} />
-              </Card>
-            </Col>
-          );
-        })}
+                    />,
+                  ]}
+                >
+                  <Card.Meta description={nft.NFTokenID} />
+                </Card>
+              </Col>
+            );
+          })
+        ) : (
+          <Col offset={8} span={8}>
+            <Empty />
+          </Col>
+        )}
       </Row>
       <Row hidden={!isSelf} gutter={16}>
         <Col span={8} offset={8} className="text-center">
