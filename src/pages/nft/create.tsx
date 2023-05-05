@@ -1,8 +1,11 @@
 import {
   Button,
+  Checkbox,
+  Col,
   Form,
   Input,
   InputNumber,
+  Row,
   Spin,
   Typography,
   Upload,
@@ -40,6 +43,7 @@ export interface NFTokenForm {
   collection?: string;
   qty: number;
   fee?: number;
+  flags?: NFTokenMintFlags[];
 }
 
 export default function CreateNFT() {
@@ -60,7 +64,7 @@ export default function CreateNFT() {
         Mint NFT
       </Typography.Title>
       <Form
-        initialValues={{ qty: 1 }}
+        initialValues={{ qty: 1, flags: [NFTokenMintFlags.tfTransferable] }}
         disabled={loading}
         className="w-60% mx-auto"
         name="basic"
@@ -92,7 +96,7 @@ export default function CreateNFT() {
                         // todo: need to bind NFTokenMinter to AccountRoot
                         // Issuer: w.address,
                         TransferFee: (nft.fee ?? 0) * 1000,
-                        Flags: NFTokenMintFlags.tfTransferable,
+                        Flags: (nft.flags ?? []).reduce((a, b) => a | b, 0),
                         URI: convertStringToHex(
                           encodeURI(
                             `${cid.toString()}/${nft.attachment[0].name}`
@@ -209,6 +213,25 @@ export default function CreateNFT() {
             placeholder="0.000"
             addonAfter="%"
           />
+        </Form.Item>
+        <Form.Item name="flags" label="Flags">
+          <Checkbox.Group>
+            <Row>
+              <Col span={8}>
+                <Checkbox value={NFTokenMintFlags.tfBurnable}>
+                  Burnable
+                </Checkbox>
+              </Col>
+              <Col span={8}>
+                <Checkbox value={NFTokenMintFlags.tfOnlyXRP}>OnlyXRP</Checkbox>
+              </Col>
+              <Col span={8}>
+                <Checkbox value={NFTokenMintFlags.tfTransferable}>
+                  Transferable
+                </Checkbox>
+              </Col>
+            </Row>
+          </Checkbox.Group>
         </Form.Item>
         <Form.Item className="text-right" wrapperCol={{ offset: 18, span: 6 }}>
           <Button loading={loading} type="primary" htmlType="submit">

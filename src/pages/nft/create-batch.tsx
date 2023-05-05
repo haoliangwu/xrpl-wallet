@@ -1,8 +1,11 @@
 import {
   Button,
+  Checkbox,
+  Col,
   Form,
   Input,
   InputNumber,
+  Row,
   Spin,
   Typography,
   Upload,
@@ -64,7 +67,7 @@ export default function CreateNFTBatch() {
         wrapperCol={{ span: 18 }}
         onFinish={async (values) => {
           const nfts = values.nfts as Array<
-            Pick<NFTokenForm, "name" | "attachment" | "fee">
+            Pick<NFTokenForm, "name" | "attachment" | "fee" | "flags">
           >;
 
           setLoading(true);
@@ -88,7 +91,7 @@ export default function CreateNFTBatch() {
                 )
                 .then((nfts) => {
                   return Promise.all(
-                    nfts.map(({ name, attachment, seq, fee }) => {
+                    nfts.map(({ name, attachment, seq, fee, flags }) => {
                       const taxon = generateNFTokenTaxon();
 
                       return web3Storage
@@ -107,7 +110,7 @@ export default function CreateNFTBatch() {
                               // todo: need to bind NFTokenMinter to AccountRoot
                               // Issuer: w.address,
                               TransferFee: (fee ?? 0) * 1000,
-                              Flags: NFTokenMintFlags.tfTransferable,
+                              Flags: (flags ?? []).reduce((a, b) => a | b, 0),
                               URI: convertStringToHex(
                                 encodeURI(
                                   `${cid.toString()}/${attachment[0].name}`
@@ -226,6 +229,33 @@ export default function CreateNFTBatch() {
                       addonAfter="%"
                     />
                   </Form.Item>
+                  <Form.Item
+                    {...restField}
+                    labelCol={{ span: 6 }}
+                    wrapperCol={{ span: 18 }}
+                    name={[name, "flags"]}
+                    label="Flags"
+                  >
+                    <Checkbox.Group>
+                      <Row>
+                        <Col span={8}>
+                          <Checkbox value={NFTokenMintFlags.tfBurnable}>
+                            Burnable
+                          </Checkbox>
+                        </Col>
+                        <Col span={8}>
+                          <Checkbox value={NFTokenMintFlags.tfOnlyXRP}>
+                            OnlyXRP
+                          </Checkbox>
+                        </Col>
+                        <Col span={8}>
+                          <Checkbox value={NFTokenMintFlags.tfTransferable}>
+                            Transferable
+                          </Checkbox>
+                        </Col>
+                      </Row>
+                    </Checkbox.Group>
+                  </Form.Item>
                   <Form.Item className="text-right">
                     {fields.length > 1 ? (
                       <MinusCircleOutlined
@@ -240,7 +270,11 @@ export default function CreateNFTBatch() {
               <Form.Item className="text-right">
                 <Button
                   type="dashed"
-                  onClick={() => add()}
+                  onClick={() =>
+                    add({
+                      flags: [NFTokenMintFlags.tfTransferable],
+                    })
+                  }
                   className="mr-2"
                   icon={<PlusOutlined />}
                 >
