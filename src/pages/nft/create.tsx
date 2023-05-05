@@ -39,6 +39,7 @@ export interface NFTokenForm {
   attachment: UploadFile[];
   collection?: string;
   qty: number;
+  fee?: number;
 }
 
 export default function CreateNFT() {
@@ -90,6 +91,7 @@ export default function CreateNFT() {
                         Account: w.address,
                         // todo: need to bind NFTokenMinter to AccountRoot
                         // Issuer: w.address,
+                        TransferFee: (nft.fee ?? 0) * 1000,
                         Flags: NFTokenMintFlags.tfTransferable,
                         URI: convertStringToHex(
                           encodeURI(
@@ -196,7 +198,17 @@ export default function CreateNFT() {
           </Upload>
         </Form.Item>
         <Form.Item label="Quantity" name="qty">
-          <InputNumber min={1} max={100} />
+          <InputNumber min={1} max={100} addonAfter="Unit" />
+        </Form.Item>
+        <Form.Item label="Transfer Fee" name="fee">
+          <InputNumber
+            min={0}
+            max={100}
+            step="0.1"
+            precision={3}
+            placeholder="0.000"
+            addonAfter="%"
+          />
         </Form.Item>
         <Form.Item className="text-right" wrapperCol={{ offset: 18, span: 6 }}>
           <Button loading={loading} type="primary" htmlType="submit">

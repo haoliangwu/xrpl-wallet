@@ -17,7 +17,7 @@ export const parseNFTokenId = (s: string) => {
 };
 
 export const normalizeNFTokenTransferFee = (fee: number) => {
-  return ((fee * 0.01) / 100).toFixed(2) + " %";
+  return ((fee * 0.001)).toFixed(3) + " %";
 };
 
 export const parseAccountId = (wallet: Wallet) => {

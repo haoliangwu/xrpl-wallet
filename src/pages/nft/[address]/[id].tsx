@@ -102,13 +102,22 @@ export default function NFTDetail() {
                     },
                   })),
                 ,
-              ]).then(([sellOffers, buyOffers]) => {
-                return {
-                  ...nft,
-                  sellOffers: sellOffers.result.offers,
-                  buyOffers: buyOffers.result.offers,
-                };
-              });
+              ]).then(
+                ([sellOffers, buyOffers]) => {
+                  return {
+                    ...nft,
+                    sellOffers: sellOffers.result.offers,
+                    buyOffers: buyOffers.result.offers,
+                  };
+                },
+                () => {
+                  return {
+                    ...nft,
+                    sellOffers: [],
+                    buyOffers: [],
+                  };
+                }
+              );
             })
       )
       .apTo(client)
@@ -185,7 +194,9 @@ export default function NFTDetail() {
                         message.success(`TX ${res.id} Confirmed`);
 
                         router.push(
-                          `/nft/${wallet.map((w) => w.getXAddress()).orSome("")}`
+                          `/nft/${wallet
+                            .map((w) => w.getXAddress())
+                            .orSome("")}`
                         );
                       })
                       .finally(() => {
@@ -256,7 +267,9 @@ export default function NFTDetail() {
                             message.success(`TX ${res.id} Confirmed`);
 
                             router.push(
-                              `/nft/${wallet.map((w) => w.getXAddress()).orSome("")}`
+                              `/nft/${wallet
+                                .map((w) => w.getXAddress())
+                                .orSome("")}`
                             );
                           })
                           .finally(() => {

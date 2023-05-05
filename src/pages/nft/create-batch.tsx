@@ -2,6 +2,7 @@ import {
   Button,
   Form,
   Input,
+  InputNumber,
   Spin,
   Typography,
   Upload,
@@ -25,6 +26,7 @@ import {
 } from "~/hooks/useXrpLedgerHook";
 import { generateNFTokenTaxon } from "~/utils";
 import { REPLACED_BY_TICKET_SEQUENCE } from "~/consts";
+import { NFTokenForm } from "./create";
 
 const onFinishFailed = (errorInfo: any) => {
   console.error("Failed:", errorInfo);
@@ -61,10 +63,9 @@ export default function CreateNFTBatch() {
         labelCol={{ span: 6 }}
         wrapperCol={{ span: 18 }}
         onFinish={async (values) => {
-          const nfts = values.nfts as Array<{
-            name: string;
-            attachment: UploadFile[];
-          }>;
+          const nfts = values.nfts as Array<
+            Pick<NFTokenForm, "name" | "attachment" | "fee">
+          >;
 
           setLoading(true);
 
@@ -87,7 +88,7 @@ export default function CreateNFTBatch() {
                 )
                 .then((nfts) => {
                   return Promise.all(
-                    nfts.map(({ name, attachment, seq }) => {
+                    nfts.map(({ name, attachment, seq, fee }) => {
                       const taxon = generateNFTokenTaxon();
 
                       return web3Storage
@@ -105,6 +106,7 @@ export default function CreateNFTBatch() {
                               Account: w.address,
                               // todo: need to bind NFTokenMinter to AccountRoot
                               // Issuer: w.address,
+                              TransferFee: (fee ?? 0) * 1000,
                               Flags: NFTokenMintFlags.tfTransferable,
                               URI: convertStringToHex(
                                 encodeURI(
@@ -207,6 +209,22 @@ export default function CreateNFTBatch() {
                     <Upload maxCount={1} beforeUpload={() => false}>
                       <Button icon={<UploadOutlined />}>Select File</Button>
                     </Upload>
+                  </Form.Item>
+                  <Form.Item
+                    {...restField}
+                    labelCol={{ span: 6 }}
+                    wrapperCol={{ span: 18 }}
+                    label="Transfer Fee"
+                    name={[name, "fee"]}
+                  >
+                    <InputNumber
+                      min={0}
+                      max={100}
+                      step="0.1"
+                      precision={3}
+                      placeholder="0.000"
+                      addonAfter="%"
+                    />
                   </Form.Item>
                   <Form.Item className="text-right">
                     {fields.length > 1 ? (
