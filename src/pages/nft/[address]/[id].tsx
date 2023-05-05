@@ -12,6 +12,8 @@ import {
   Modal,
   Form,
   InputNumber,
+  Descriptions,
+  Tag,
 } from "antd";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -20,6 +22,7 @@ import {
   NFTBuyOffersResponse,
   NFTSellOffersResponse,
   NFTokenCreateOfferFlags,
+  NFTokenMintFlags,
   TxResponse,
   dropsToXrp,
   xrpToDrops,
@@ -31,7 +34,7 @@ import {
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
 import { ArrayElement, CiloNFTokenResponse } from "~/types";
-import { resolveTxExpiration } from "~/utils";
+import { parseNFTokenId, resolveTxExpiration } from "~/utils";
 import ScannerText from "~/components/ScannerText";
 
 export default function NFTDetail() {
@@ -133,6 +136,8 @@ export default function NFTDetail() {
   const formRefBuy = useRef<FormInstance>(null);
 
   const normalizedUri = nft?.uri ? `https://ipfs.io/ipfs/${nft.uri}` : "";
+
+  const parsedNFToken = parseNFTokenId(id as string);
 
   return (
     <div>
@@ -318,7 +323,7 @@ export default function NFTDetail() {
           </Col>
         )}
       </Row>
-      <Row gutter={16} className="mt-4">
+      <Row gutter={16} className="mt-2">
         <Col span={8}>
           <img
             className="w-full object-cover"
@@ -327,66 +332,99 @@ export default function NFTDetail() {
           />
         </Col>
         <Col span={16}>
-          <List
-            header={
-              <div className="flex">
-                <Typography.Title level={3}>SELL Offers</Typography.Title>
-                <span className="flex-auto"></span>
-              </div>
-            }
-            bordered
-            dataSource={nft?.sellOffers}
-            renderItem={(
-              item: ArrayElement<NFTSellOffersResponse["result"]["offers"]>
-            ) => (
-              <List.Item>
-                <div className="flex-auto">
-                  <div className="flex">
-                    <Typography.Text>{item.nft_offer_index}</Typography.Text>
-                  </div>
-                  <Typography.Text mark>
-                    {dropsToXrp(item.amount.toString())}
-                  </Typography.Text>
-                  <span className="mx-1">XRP /</span>
-                  <Typography.Text>{item.owner}</Typography.Text>
+          <Descriptions
+            title={<Typography.Title level={3}>NFT Profile</Typography.Title>}
+            layout="vertical"
+          >
+            <Descriptions.Item label="Sequence">
+              {parsedNFToken.seq}
+            </Descriptions.Item>
+            <Descriptions.Item label="Taxon">
+              {parsedNFToken.taxon}
+            </Descriptions.Item>
+            <Descriptions.Item label="Fee">
+              {parsedNFToken.fee}
+            </Descriptions.Item>
+            <Descriptions.Item label="Issuer" span={2}>
+              {parsedNFToken.issuer}
+            </Descriptions.Item>
+            <Descriptions.Item label="Flags">
+              {Boolean(NFTokenMintFlags.tfBurnable & parsedNFToken.flags) && (
+                <Tag>Burnable</Tag>
+              )}
+              {Boolean(NFTokenMintFlags.tfOnlyXRP & parsedNFToken.flags) && (
+                <Tag>OnlyXRP</Tag>
+              )}
+              {Boolean(
+                NFTokenMintFlags.tfTransferable & parsedNFToken.flags
+              ) && <Tag>Transferable</Tag>}
+            </Descriptions.Item>
+          </Descriptions>
+          {nft?.sellOffers && nft.sellOffers.length > 0 && (
+            <List
+              className="mt-2"
+              header={
+                <div className="flex">
+                  <Typography.Title level={3}>SELL Offers</Typography.Title>
+                  <span className="flex-auto"></span>
                 </div>
-              </List.Item>
-            )}
-          />
-          <List
-            className="mt-4"
-            header={
-              <div className="flex">
-                <Typography.Title level={3}>BUY Offers</Typography.Title>
-                <span className="flex-auto"></span>
-              </div>
-            }
-            bordered
-            dataSource={nft?.buyOffers}
-            renderItem={(
-              item: ArrayElement<NFTBuyOffersResponse["result"]["offers"]>
-            ) => (
-              <List.Item>
-                <div className="flex-auto">
-                  <div className="flex">
-                    <Typography.Text>{item.nft_offer_index}</Typography.Text>
-                    <span className="flex-auto" />
-                    <Checkbox
-                      checked={
-                        buyOffer?.nft_offer_index === item.nft_offer_index
-                      }
-                      onClick={() => setBuyOffer(item)}
-                    />
+              }
+              bordered
+              dataSource={nft.sellOffers}
+              renderItem={(
+                item: ArrayElement<NFTSellOffersResponse["result"]["offers"]>
+              ) => (
+                <List.Item>
+                  <div className="flex-auto">
+                    <div className="flex">
+                      <Typography.Text>{item.nft_offer_index}</Typography.Text>
+                    </div>
+                    <Typography.Text mark>
+                      {dropsToXrp(item.amount.toString())}
+                    </Typography.Text>
+                    <span className="mx-1">XRP /</span>
+                    <Typography.Text>{item.owner}</Typography.Text>
                   </div>
-                  <Typography.Text mark>
-                    {dropsToXrp(item.amount.toString())}
-                  </Typography.Text>
-                  <span className="mx-1">XRP /</span>
-                  <Typography.Text>{item.owner}</Typography.Text>
+                </List.Item>
+              )}
+            />
+          )}
+          {nft?.buyOffers && nft.buyOffers.length > 0 && (
+            <List
+              className="mt-4"
+              header={
+                <div className="flex">
+                  <Typography.Title level={3}>BUY Offers</Typography.Title>
+                  <span className="flex-auto"></span>
                 </div>
-              </List.Item>
-            )}
-          />
+              }
+              bordered
+              dataSource={nft.buyOffers}
+              renderItem={(
+                item: ArrayElement<NFTBuyOffersResponse["result"]["offers"]>
+              ) => (
+                <List.Item>
+                  <div className="flex-auto">
+                    <div className="flex">
+                      <Typography.Text>{item.nft_offer_index}</Typography.Text>
+                      <span className="flex-auto" />
+                      <Checkbox
+                        checked={
+                          buyOffer?.nft_offer_index === item.nft_offer_index
+                        }
+                        onClick={() => setBuyOffer(item)}
+                      />
+                    </div>
+                    <Typography.Text mark>
+                      {dropsToXrp(item.amount.toString())}
+                    </Typography.Text>
+                    <span className="mx-1">XRP /</span>
+                    <Typography.Text>{item.owner}</Typography.Text>
+                  </div>
+                </List.Item>
+              )}
+            />
+          )}
         </Col>
       </Row>
       <Modal

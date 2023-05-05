@@ -15,6 +15,7 @@ import {
 } from "~/hooks/useXrpLedgerHook";
 import { NFTokenPage, NFToken } from "~/types";
 import ScannerText from "~/components/ScannerText";
+import { parseAccountId } from "~/utils";
 
 export default function NFT() {
   const router = useRouter();
@@ -31,66 +32,41 @@ export default function NFT() {
 
   const syncAccountNFTs = useCallback(
     (nftPageId: string) => {
-      if (isSelf) {
-        wallet
-          .map(
-            (w) => (c: Client) =>
-              c
-                .request({
-                  command: "ledger_entry",
-                  nft_page: nftPageId,
-                  ledger_index: "validated",
-                })
-                .then((res) => {
-                  // @ts-ignore
-                  return res.result.node as NFTokenPage;
-                })
-          )
-          .apTo(client)
-          .forEach((defer) => {
-            defer
-              .then((res) => {
-                setNftPage(res);
-                setNFTs(res.NFTokens.map((t) => t.NFToken));
-              })
-              .catch((err: Error) => {
-                console.error(err);
-              });
-          });
-      } else {
-        wallet
-          .map(
-            (w) => (c: Client) =>
-              c.request({
-                command: "account_nfts",
-                account: address as string,
+      wallet
+        .map(
+          (w) => (c: Client) =>
+            c
+              .request({
+                command: "ledger_entry",
+                nft_page: nftPageId,
                 ledger_index: "validated",
               })
-          )
-          .apTo(client)
-          .forEach((defer) => {
-            defer.then((res) => {
-              setNFTs(res.result.account_nfts);
+              .then((res) => {
+                // @ts-ignore
+                return res.result.node as NFTokenPage;
+              })
+        )
+        .apTo(client)
+        .forEach((defer) => {
+          defer
+            .then((res) => {
+              setNftPage(res);
+              setNFTs(res.NFTokens.map((t) => t.NFToken));
+            })
+            .catch((err: Error) => {
+              console.error(err);
             });
-          });
-      }
+        });
     },
-    [isSelf, wallet, client, address]
+    [wallet, client]
   );
 
   // init logic when comp is mounted
   useEffect(() => {
-    wallet
-      .map(
-        (w) => (c: Client) =>
-          fetch(`/api/account-id?pubKey=${w.publicKey}`)
-            .then((res) => res.json())
-            .then(({ account_id }) => {
-              return syncAccountNFTs(`${account_id}FFFFFFFFFFFFFFFFFFFFFFFF`);
-            })
-      )
-      .apTo(client);
-  }, [client, syncAccountNFTs, wallet]);
+    wallet.forEach((w) => {
+      return syncAccountNFTs(`${parseAccountId(w)}FFFFFFFFFFFFFFFFFFFFFFFF`);
+    });
+  }, [syncAccountNFTs, wallet]);
 
   return (
     <div>

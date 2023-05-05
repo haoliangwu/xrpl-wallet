@@ -19,12 +19,12 @@ import {
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
 import ScannerText from "~/components/ScannerText";
+import { parseAccountId } from "~/utils";
 
 export default function Home() {
   const router = useRouter();
-  const [account, setAccount] = useState<
-    AccountInfoResponse["result"]["account_data"] & { Id: string }
-  >();
+  const [account, setAccount] =
+    useState<AccountInfoResponse["result"]["account_data"]>();
 
   const { client, network, setNetwork } = useXrpLedgerClient();
   const { wallet, wallets, setWallet } = useXrpLedgerWallet();
@@ -36,27 +36,16 @@ export default function Home() {
     wallet
       .map(
         (w) => (c: Client) =>
-          c
-            .request({
-              command: "account_info",
-              account: w.address,
-              ledger_index: "validated",
-            })
-            .then(({ result }) => {
-              return fetch(`/api/account-id?pubKey=${w.publicKey}`)
-                .then((res) => res.json())
-                .then(({ account_id }) => {
-                  return {
-                    ...result.account_data,
-                    Id: account_id,
-                  };
-                });
-            })
+          c.request({
+            command: "account_info",
+            account: w.address,
+            ledger_index: "validated",
+          })
       )
       .apTo(client)
       .forEach((defer) => {
         defer.then((account) => {
-          setAccount(account);
+          setAccount(account.result.account_data);
         });
       });
   }, [client, wallet]);
@@ -116,7 +105,9 @@ export default function Home() {
     <>
       <div className="text-center">
         <Typography.Title level={4}>Account ID</Typography.Title>
-        <Typography.Text copyable>{account?.Id}</Typography.Text>
+        <Typography.Text copyable>
+          {wallet.map((w) => parseAccountId(w)).orSome("-")}
+        </Typography.Text>
         <Typography.Title level={4}>Address</Typography.Title>
         <Typography.Text copyable>{wallet.some().address}</Typography.Text>
       </div>
@@ -163,10 +154,10 @@ export default function Home() {
                 <div className="flex mb-2">
                   <span className="mr-2">Sequence</span>
                   <span className="flex-auto"></span>
-                  <Typography.Text
-                    className="text-xs"
-                  >
-                    {tx?.Sequence === 0 ? `${tx.TicketSequence} (Ticket)` : tx?.Sequence}
+                  <Typography.Text className="text-xs">
+                    {tx?.Sequence === 0
+                      ? `${tx.TicketSequence} (Ticket)`
+                      : tx?.Sequence}
                   </Typography.Text>
                 </div>
                 <div className="flex">
