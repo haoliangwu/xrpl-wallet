@@ -29,7 +29,7 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
     useContext(XrpLedgerContext);
 
   return (
-    <div className="w-1000px mx-auto">
+    <div className="w-1200px mx-auto">
       <div className="h-80px flex items-center gap-4">
         <Image
           width={200}
