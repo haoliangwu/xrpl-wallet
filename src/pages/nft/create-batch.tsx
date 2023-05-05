@@ -147,7 +147,7 @@ export default function CreateNFTBatch() {
             .forEach((defer) => {
               defer
                 .then((res) => {
-                  message.success(`Batch Mint ${res.length} NFT TXs Confirmed`);
+                  message.success(`Batch Mint ${res.length} NFTs TX Confirmed`);
 
                   router.push(
                     `/nft/${wallet.map((w) => w.address).orSome("")}`

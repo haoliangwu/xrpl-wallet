@@ -11,16 +11,8 @@ import {
 } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import { useRouter } from "next/router";
-import { useEffect, useRef, useState } from "react";
-import {
-  Client,
-  NFTokenMintFlags,
-  Payment,
-  TxResponse,
-  convertStringToHex,
-  dropsToXrp,
-  xrpToDrops,
-} from "xrpl";
+import { useState } from "react";
+import { Client, NFTokenMintFlags, TxResponse, convertStringToHex } from "xrpl";
 import { Web3Storage } from "web3.storage";
 
 import {
@@ -29,6 +21,7 @@ import {
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
 import { generateNFTokenTaxon } from "~/utils";
+import { REPLACED_BY_TICKET_SEQUENCE } from "~/consts";
 
 const onFinishFailed = (errorInfo: any) => {
   console.error("Failed:", errorInfo);
@@ -40,6 +33,13 @@ const normFile = (e: any) => {
   }
   return e?.fileList;
 };
+
+export interface NFTokenForm {
+  name: string;
+  attachment: UploadFile[];
+  collection?: string;
+  qty: number;
+}
 
 export default function CreateNFT() {
   const router = useRouter();
@@ -59,6 +59,7 @@ export default function CreateNFT() {
         Mint NFT
       </Typography.Title>
       <Form
+        initialValues={{ qty: 1 }}
         disabled={loading}
         className="w-60% mx-auto"
         name="basic"
@@ -69,56 +70,97 @@ export default function CreateNFT() {
 
           wallet
             .map((w) => (c: Client) => (web3Storage: Web3Storage) => {
-              const attachment = values.attachment as UploadFile[];
-              const taxon = generateNFTokenTaxon();
+              function mint(nft: NFTokenForm & { seq?: number }) {
+                return web3Storage
+                  .put(
+                    nft.attachment.map((a: any) => a.originFileObj),
+                    { name: nft.name }
+                  )
+                  .then((cid) => {
+                    return c
+                      .autofill({
+                        ...(nft.seq
+                          ? {
+                              Sequence: REPLACED_BY_TICKET_SEQUENCE,
+                              TicketSequence: nft.seq,
+                            }
+                          : {}),
+                        TransactionType: "NFTokenMint",
+                        NFTokenTaxon: generateNFTokenTaxon(),
+                        Account: w.address,
+                        // todo: need to bind NFTokenMinter to AccountRoot
+                        // Issuer: w.address,
+                        Flags: NFTokenMintFlags.tfTransferable,
+                        URI: convertStringToHex(
+                          encodeURI(
+                            `${cid.toString()}/${nft.attachment[0].name}`
+                          )
+                        ),
+                        Memos: [
+                          {
+                            Memo: {
+                              MemoType: convertStringToHex(
+                                encodeURI("nftName")
+                              ),
+                              MemoData: convertStringToHex(encodeURI(nft.name)),
+                            },
+                          },
+                          {
+                            Memo: {
+                              MemoType: convertStringToHex(
+                                encodeURI("mimetype")
+                              ),
+                              MemoData: convertStringToHex(
+                                encodeURI(nft.attachment[0].type ?? "")
+                              ),
+                            },
+                          },
+                        ],
+                      })
+                      .then((prepared) => {
+                        return c.submitAndWait(w.sign(prepared).tx_blob);
+                      });
+                  });
+              }
 
-              return web3Storage
-                .put(
-                  attachment.map((a: any) => a.originFileObj),
-                  { name: values.name }
-                )
-                .then((cid) => {
-                  return c
-                    .autofill({
-                      TransactionType: "NFTokenMint",
-                      NFTokenTaxon: taxon,
-                      Account: w.address,
-                      // todo: need to bind NFTokenMinter to AccountRoot
-                      // Issuer: w.address,
-                      Flags: NFTokenMintFlags.tfTransferable,
-                      URI: convertStringToHex(
-                        encodeURI(`${cid.toString()}/${attachment[0].name}`)
-                      ),
-                      Memos: [
-                        {
-                          Memo: {
-                            MemoType: convertStringToHex(encodeURI("nftName")),
-                            MemoData: convertStringToHex(
-                              encodeURI(values.name)
-                            ),
-                          },
-                        },
-                        {
-                          Memo: {
-                            MemoType: convertStringToHex(encodeURI("mimetype")),
-                            MemoData: convertStringToHex(
-                              encodeURI(attachment[0].type ?? "")
-                            ),
-                          },
-                        },
-                      ],
-                    })
-                    .then((prepared) => {
-                      return c.submitAndWait(w.sign(prepared).tx_blob);
-                    });
-                });
+              if (values.qty > 1) {
+                return c
+                  .autofill({
+                    TransactionType: "TicketCreate",
+                    Account: w.address,
+                    TicketCount: values.qty,
+                  })
+                  .then((prepared) => {
+                    return c.submitAndWait(w.sign(prepared).tx_blob);
+                  })
+                  .then((res) =>
+                    Promise.all(
+                      Array.from<void, Promise<TxResponse>>(
+                        new Array(values.qty),
+                        (_, idx) =>
+                          mint({
+                            ...values,
+                            seq: res.result.Sequence! + idx + 1,
+                          })
+                      )
+                    )
+                  );
+              } else {
+                return mint(values);
+              }
             })
             .apTo(client)
             .apTo(web3Storage)
             .forEach((defer) => {
               defer
-                .then((res: TxResponse) => {
-                  message.success(`TX ${res.id} Confirmed`);
+                .then((res: TxResponse | TxResponse[]) => {
+                  if (Array.isArray(res)) {
+                    message.success(
+                      `Multiple Mint ${res.length} NFTs TX Confirmed`
+                    );
+                  } else {
+                    message.success(`TX ${res.id} Confirmed`);
+                  }
 
                   router.push(
                     `/nft/${wallet.map((w) => w.address).orSome("")}`
@@ -139,6 +181,9 @@ export default function CreateNFT() {
         >
           <Input placeholder="NFT Name" />
         </Form.Item>
+        {/* <Form.Item label="Collection" name="collection">
+          <Input placeholder="NFT Collection" />
+        </Form.Item> */}
         <Form.Item
           label="Attachment"
           name="attachment"
@@ -149,6 +194,9 @@ export default function CreateNFT() {
           <Upload maxCount={1} beforeUpload={() => false}>
             <Button icon={<UploadOutlined />}>Select File</Button>
           </Upload>
+        </Form.Item>
+        <Form.Item label="Quantity" name="qty">
+          <InputNumber min={1} max={100} />
         </Form.Item>
         <Form.Item className="text-right" wrapperCol={{ offset: 18, span: 6 }}>
           <Button loading={loading} type="primary" htmlType="submit">
