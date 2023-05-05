@@ -6,7 +6,12 @@ import {
 } from "@ant-design/icons";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Client, TxResponse, convertHexToString } from "xrpl";
+import {
+  Client,
+  TxResponse,
+  convertHexToString,
+  xAddressToClassicAddress,
+} from "xrpl";
 
 import {
   useWeb3Storage,
@@ -19,7 +24,7 @@ import { parseAccountId } from "~/utils";
 
 export default function NFT() {
   const router = useRouter();
-  const { address } = router.query;
+  const { address: xAddress } = router.query;
   const [loading, setLoading] = useState(false);
   const { client } = useXrpLedgerClient();
   const { wallet } = useXrpLedgerWallet();
@@ -28,7 +33,7 @@ export default function NFT() {
   const [nftPage, setNftPage] = useState<NFTokenPage>();
   const [nfts, setNFTs] = useState<Array<NFToken>>([]);
 
-  const isSelf = wallet.every((w) => w.address === address);
+  const isSelf = wallet.every((w) => w.getXAddress() === xAddress);
 
   const syncAccountNFTs = useCallback(
     (nftPageId: string) => {
@@ -55,6 +60,9 @@ export default function NFT() {
             })
             .catch((err: Error) => {
               console.error(err);
+
+              setNftPage(undefined);
+              setNFTs([]);
             });
         });
     },
@@ -67,6 +75,8 @@ export default function NFT() {
       return syncAccountNFTs(`${parseAccountId(w)}FFFFFFFFFFFFFFFFFFFFFFFF`);
     });
   }, [syncAccountNFTs, wallet]);
+
+  const { classicAddress } = xAddressToClassicAddress(xAddress as string);
 
   return (
     <div>
@@ -81,8 +91,8 @@ export default function NFT() {
             NFTs
             <Typography.Text className="ml-1">
               /{" "}
-              <ScannerText href={`/accounts/${address}/assets/nft`}>
-                {address}
+              <ScannerText href={`/accounts/${classicAddress}/assets/nft`}>
+                {classicAddress}
               </ScannerText>
             </Typography.Text>
           </Typography.Title>
@@ -166,7 +176,7 @@ export default function NFT() {
           </Col>
         )}
       </Row>
-      <Row hidden={!isSelf} gutter={16}>
+      <Row gutter={16}>
         <Col span={8} offset={8} className="text-center">
           <Button
             onClick={() => syncAccountNFTs(nftPage?.NextPageMin!)}

@@ -25,6 +25,7 @@ import {
   NFTokenMintFlags,
   TxResponse,
   dropsToXrp,
+  xAddressToClassicAddress,
   xrpToDrops,
 } from "xrpl";
 
@@ -39,7 +40,7 @@ import ScannerText from "~/components/ScannerText";
 
 export default function NFTDetail() {
   const router = useRouter();
-  const { address, id } = router.query;
+  const { address: xAddress, id } = router.query;
   const [loading, setLoading] = useState(false);
   const { client, ciloClient } = useXrpLedgerClient();
   const { wallet } = useXrpLedgerWallet();
@@ -57,7 +58,7 @@ export default function NFTDetail() {
     }
   >();
 
-  const isSelf = wallet.every((w) => w.address === address);
+  const isSelf = wallet.every((w) => w.getXAddress() === xAddress);
 
   const syncAccountNFTs = useCallback(() => {
     wallet
@@ -120,7 +121,7 @@ export default function NFTDetail() {
           .catch((err: Error) => {
             message.error(err.message);
 
-            router.push(`/nft/${wallet.map((w) => w.address).some()}`);
+            router.push(`/nft/${wallet.map((w) => w.getXAddress()).some()}`);
           });
       });
   }, [wallet, client, ciloClient, id, router]);
@@ -138,6 +139,7 @@ export default function NFTDetail() {
   const normalizedUri = nft?.uri ? `https://ipfs.io/ipfs/${nft.uri}` : "";
 
   const parsedNFToken = parseNFTokenId(id as string);
+  const { classicAddress } = xAddressToClassicAddress(xAddress as string);
 
   return (
     <div>
@@ -183,7 +185,7 @@ export default function NFTDetail() {
                         message.success(`TX ${res.id} Confirmed`);
 
                         router.push(
-                          `/nft/${wallet.map((w) => w.address).orSome("")}`
+                          `/nft/${wallet.map((w) => w.getXAddress()).orSome("")}`
                         );
                       })
                       .finally(() => {
@@ -254,7 +256,7 @@ export default function NFTDetail() {
                             message.success(`TX ${res.id} Confirmed`);
 
                             router.push(
-                              `/nft/${wallet.map((w) => w.address).orSome("")}`
+                              `/nft/${wallet.map((w) => w.getXAddress()).orSome("")}`
                             );
                           })
                           .finally(() => {
@@ -503,12 +505,12 @@ export default function NFTDetail() {
             .map((w) => (c: Client) => {
               return c
                 .autofill({
-                  Owner: address as string,
+                  Owner: classicAddress as string,
                   Account: w.address,
                   TransactionType: "NFTokenCreateOffer",
                   NFTokenID: nft.nft_id,
                   Amount: xrpToDrops(formRefBuy.current?.getFieldValue("qty")),
-                  Destination: address as string,
+                  Destination: classicAddress as string,
                   // todo: it could be customized
                   Expiration: resolveTxExpiration(3600 * 24 * 7),
                 })

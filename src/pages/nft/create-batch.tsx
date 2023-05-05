@@ -150,7 +150,7 @@ export default function CreateNFTBatch() {
                   message.success(`Batch Mint ${res.length} NFTs TX Confirmed`);
 
                   router.push(
-                    `/nft/${wallet.map((w) => w.address).orSome("")}`
+                    `/nft/${wallet.map((w) => w.getXAddress()).orSome("")}`
                   );
                 })
                 .finally(() => {

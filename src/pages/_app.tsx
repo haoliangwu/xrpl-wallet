@@ -95,7 +95,7 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
                   key: "nft",
                   label: (
                     <Link
-                      href={`/nft/${wallet.map((w) => w.address).orSome("")}`}
+                      href={`/nft/${wallet.map((w) => w.getXAddress()).orSome("")}`}
                     >
                       My NFTs
                     </Link>

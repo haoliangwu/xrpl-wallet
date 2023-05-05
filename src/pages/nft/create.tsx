@@ -163,7 +163,7 @@ export default function CreateNFT() {
                   }
 
                   router.push(
-                    `/nft/${wallet.map((w) => w.address).orSome("")}`
+                    `/nft/${wallet.map((w) => w.getXAddress()).orSome("")}`
                   );
                 })
                 .finally(() => {
