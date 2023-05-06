@@ -104,9 +104,14 @@ export default function NFT() {
 
   // init logic when comp is mounted
   useDidMount(() => {
-    wallet.forEach((w) => {
-      return syncAccountNFTs(`${parseAccountId(w)}FFFFFFFFFFFFFFFFFFFFFFFF`);
-    });
+    if(isSelf) {
+
+      wallet.forEach((w) => {
+        return syncAccountNFTs(`${parseAccountId(w)}FFFFFFFFFFFFFFFFFFFFFFFF`);
+      });
+    } else {
+      syncAccountNFTs(`${parseAccountId(xAddress as string)}FFFFFFFFFFFFFFFFFFFFFFFF`)
+    }
   });
 
   const { classicAddress } = xAddressToClassicAddress(xAddress as string);
