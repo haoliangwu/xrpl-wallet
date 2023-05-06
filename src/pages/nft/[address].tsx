@@ -47,7 +47,7 @@ export default function NFT() {
   const [nftPage, setNftPage] = useState<Maybe<NFTokenPage>>(Maybe.None());
   const [nfts, setNFTs] = useState<Array<NFToken>>([]);
 
-  const isSelf = wallet.every((w) => w.getXAddress() === xAddress);
+  const isSelf = wallet.exists((w) => w.getXAddress() === xAddress);
 
   const syncAccountNFTs = useCallback(
     (nftPageId: string) => {
@@ -140,14 +140,11 @@ export default function NFT() {
           </Col>
         )}
       </Row>
-      <div
-        id="scrollableDiv"
-        className="my-12 w-full max-h-600px overflow-y-auto"
-      >
+      <div id="scrollableDiv" className="my-12 w-full h-600px overflow-y-auto">
         <InfiniteScroll
           dataLength={nfts.length}
           next={loadMoreNFTs}
-          hasMore={nftPage.every((p) => Boolean(p.PreviousPageMin))}
+          hasMore={nftPage.exists((p) => Boolean(p.PreviousPageMin))}
           loader={<Skeleton className="mt-6" paragraph={{ rows: 1 }} active />}
           endMessage={
             // warn: the limit of NFTokenPage is 32

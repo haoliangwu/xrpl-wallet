@@ -30,6 +30,7 @@ import {
   xrpToDrops,
 } from "xrpl";
 import useDidMount from "beautiful-react-hooks/useDidMount";
+import { Maybe } from "monet";
 
 import {
   useWeb3Storage,
@@ -40,6 +41,13 @@ import { ArrayElement, CiloNFTokenResponse } from "~/types";
 import { percentFormat, resolveTxExpiration } from "~/utils";
 import ScannerText from "~/components/ScannerText";
 
+type NFTState = CiloNFTokenResponse["result"] & {
+  sellOffers: NFTSellOffersResponse["result"]["offers"];
+  buyOffers: NFTBuyOffersResponse["result"]["offers"];
+};
+
+type BuyOfferState = ArrayElement<NFTBuyOffersResponse["result"]["offers"]>;
+
 export default function NFTDetail() {
   const router = useRouter();
   const { address: xAddress, id } = router.query;
@@ -48,19 +56,10 @@ export default function NFTDetail() {
   const { wallet } = useXrpLedgerWallet();
   const { web3Storage } = useWeb3Storage();
 
-  const [sellOffer, setSellOffer] =
-    useState<ArrayElement<NFTSellOffersResponse["result"]["offers"]>>();
-  const [buyOffer, setBuyOffer] =
-    useState<ArrayElement<NFTSellOffersResponse["result"]["offers"]>>();
+  const [buyOffer, setBuyOffer] = useState<Maybe<BuyOfferState>>(Maybe.None());
+  const [nft, setNFT] = useState<Maybe<NFTState>>(Maybe.None());
 
-  const [nft, setNFT] = useState<
-    CiloNFTokenResponse["result"] & {
-      sellOffers: NFTSellOffersResponse["result"]["offers"];
-      buyOffers: NFTBuyOffersResponse["result"]["offers"];
-    }
-  >();
-
-  const isSelf = wallet.every((w) => w.getXAddress() === xAddress);
+  const isSelf = wallet.exists((w) => w.getXAddress() === xAddress);
 
   const syncAccountNFTs = useCallback(() => {
     wallet
@@ -127,7 +126,7 @@ export default function NFTDetail() {
       .forEach((defer) => {
         defer
           .then((res) => {
-            setNFT(res);
+            setNFT(Maybe.Some(res));
           })
           .catch((err: Error) => {
             message.error(err.message);
@@ -147,12 +146,12 @@ export default function NFTDetail() {
   const [isModalOpenBuy, setIsModalOpenBuy] = useState(false);
   const formRefBuy = useRef<FormInstance>(null);
 
-  const normalizedUri = nft?.uri ? `https://ipfs.io/ipfs/${nft.uri}` : "";
+  const normalizedUri = nft
+    .map((e) => `https://ipfs.io/ipfs/${e.uri}`)
+    .orSome("");
 
   const parsedNFToken = parseNFTokenID(id as string);
   const { classicAddress } = xAddressToClassicAddress(xAddress as string);
-
-  console.log(parsedNFToken);
 
   return (
     <div>
@@ -215,7 +214,7 @@ export default function NFTDetail() {
                 Burn
               </Button>
             </Popconfirm>
-            {nft?.sellOffers && nft?.sellOffers.length > 0 ? (
+            {nft.exists((e) => e.sellOffers.length > 0) ? (
               <>
                 <Popconfirm
                   title="Are you sure ?"
@@ -225,46 +224,46 @@ export default function NFTDetail() {
                     setLoading(true);
 
                     wallet
-                      .map((w) => (c: Client) => {
-                        return (
-                          c
-                            .autofill(
-                              isSelf
-                                ? {
-                                    Account: w.address,
-                                    TransactionType: "NFTokenAcceptOffer",
-                                    NFTokenBuyOffer: buyOffer?.nft_offer_index,
-                                  }
-                                : {
-                                    Account: w.address,
-                                    TransactionType: "NFTokenAcceptOffer",
-                                    NFTokenSellOffer:
-                                      sellOffer?.nft_offer_index,
-                                  }
-                            )
-                            .then((prepared) => {
-                              return c.submitAndWait(w.sign(prepared).tx_blob);
-                            })
-                            // cancel all legacy offers
-                            .then(() => {
-                              return c
+                      .map(
+                        (w) =>
+                          (c: Client) =>
+                          (nft: NFTState) =>
+                          (buyOffer: BuyOfferState) => {
+                            return (
+                              c
                                 .autofill({
                                   Account: w.address,
-                                  TransactionType: "NFTokenCancelOffer",
-                                  NFTokenOffers: [
-                                    ...nft.sellOffers,
-                                    ...nft.buyOffers,
-                                  ].map((o) => o.nft_offer_index),
+                                  TransactionType: "NFTokenAcceptOffer",
+                                  NFTokenBuyOffer: buyOffer.nft_offer_index,
                                 })
                                 .then((prepared) => {
                                   return c.submitAndWait(
                                     w.sign(prepared).tx_blob
                                   );
-                                });
-                            })
-                        );
-                      })
+                                })
+                                // cancel all legacy offers
+                                .then(() => {
+                                  return c
+                                    .autofill({
+                                      Account: w.address,
+                                      TransactionType: "NFTokenCancelOffer",
+                                      NFTokenOffers: [
+                                        ...nft.sellOffers,
+                                        ...nft.buyOffers,
+                                      ].map((o) => o.nft_offer_index),
+                                    })
+                                    .then((prepared) => {
+                                      return c.submitAndWait(
+                                        w.sign(prepared).tx_blob
+                                      );
+                                    });
+                                })
+                            );
+                          }
+                      )
                       .apTo(client)
+                      .apTo(nft)
+                      .apTo(buyOffer)
                       .forEach((defer) => {
                         defer
                           .then((res) => {
@@ -294,7 +293,7 @@ export default function NFTDetail() {
                     setLoading(true);
 
                     wallet
-                      .map((w) => (c: Client) => {
+                      .map((w) => (c: Client) => (nft: NFTState) => {
                         return c
                           .autofill({
                             Account: w.address,
@@ -308,6 +307,7 @@ export default function NFTDetail() {
                           });
                       })
                       .apTo(client)
+                      .apTo(nft)
                       .forEach((defer) => {
                         defer
                           .then((res: TxResponse) => {
@@ -379,7 +379,7 @@ export default function NFTDetail() {
               ) && <Tag>Transferable</Tag>}
             </Descriptions.Item>
           </Descriptions>
-          {nft?.sellOffers && nft.sellOffers.length > 0 && (
+          {
             <List
               className="mt-2"
               header={
@@ -389,7 +389,7 @@ export default function NFTDetail() {
                 </div>
               }
               bordered
-              dataSource={nft.sellOffers}
+              dataSource={nft.map((e) => e.sellOffers).orSome([])}
               renderItem={(
                 item: ArrayElement<NFTSellOffersResponse["result"]["offers"]>
               ) => (
@@ -407,8 +407,8 @@ export default function NFTDetail() {
                 </List.Item>
               )}
             />
-          )}
-          {nft?.buyOffers && nft.buyOffers.length > 0 && (
+          }
+          {
             <List
               className="mt-4"
               header={
@@ -418,7 +418,7 @@ export default function NFTDetail() {
                 </div>
               }
               bordered
-              dataSource={nft.buyOffers}
+              dataSource={nft.map((e) => e.buyOffers).orSome([])}
               renderItem={(
                 item: ArrayElement<NFTBuyOffersResponse["result"]["offers"]>
               ) => (
@@ -428,10 +428,10 @@ export default function NFTDetail() {
                       <Typography.Text>{item.nft_offer_index}</Typography.Text>
                       <span className="flex-auto" />
                       <Checkbox
-                        checked={
-                          buyOffer?.nft_offer_index === item.nft_offer_index
-                        }
-                        onClick={() => setBuyOffer(item)}
+                        checked={buyOffer.exists(
+                          (o) => o.nft_offer_index === item.nft_offer_index
+                        )}
+                        onClick={() => setBuyOffer(Maybe.Some(item))}
                       />
                     </div>
                     <Typography.Text mark>
@@ -443,11 +443,11 @@ export default function NFTDetail() {
                 </List.Item>
               )}
             />
-          )}
+          }
         </Col>
       </Row>
       <Modal
-        key={nft?.nft_id + "SELL"}
+        key={nft.map((e) => e.nft_id + "SELL").orSome("SELL")}
         title="Create SELL Offer"
         open={isModalOpenSell}
         onOk={() => {
@@ -457,7 +457,7 @@ export default function NFTDetail() {
           setLoading(true);
 
           wallet
-            .map((w) => (c: Client) => {
+            .map((w) => (c: Client) => (nft: NFTState) => {
               return c
                 .autofill({
                   Account: w.address,
@@ -475,6 +475,7 @@ export default function NFTDetail() {
                 });
             })
             .apTo(client)
+            .apTo(nft)
             .forEach((defer) => {
               defer
                 .then((res: TxResponse) => {
@@ -509,7 +510,7 @@ export default function NFTDetail() {
         </Form>
       </Modal>
       <Modal
-        key={nft?.nft_id + "BUY"}
+        key={nft.map((e) => e.nft_id + "BUY").orSome("BUY")}
         title="Create BUY Offer"
         open={isModalOpenBuy}
         onOk={() => {
@@ -519,7 +520,7 @@ export default function NFTDetail() {
           setLoading(true);
 
           wallet
-            .map((w) => (c: Client) => {
+            .map((w) => (c: Client) => (nft: NFTState) => {
               return c
                 .autofill({
                   Owner: classicAddress as string,
@@ -536,6 +537,7 @@ export default function NFTDetail() {
                 });
             })
             .apTo(client)
+            .apTo(nft)
             .forEach((defer) => {
               defer
                 .then((res: TxResponse) => {

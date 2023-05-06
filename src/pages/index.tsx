@@ -214,12 +214,12 @@ export default function Home() {
           <InfiniteScroll
             dataLength={txHistory.map((h) => h.transactions.length).orSome(0)}
             next={loadMoreTxHistory}
-            hasMore={txHistory.every((h) => Boolean(h.marker))}
+            hasMore={txHistory.exists((h) => Boolean(h.marker))}
             loader={
               <Skeleton className="mt-6" paragraph={{ rows: 1 }} active />
             }
             endMessage={
-              txHistory.every((h) => h.transactions.length > h.limit) && (
+              txHistory.exists((h) => h.transactions.length > h.limit) && (
                 <Divider plain>It is all, nothing more 🤐</Divider>
               )
             }
@@ -229,7 +229,7 @@ export default function Home() {
               .map((h) => h.transactions.map((t) => t.tx))
               .orSome([])
               .map((tx) => {
-                const isRecipient = wallet.every(
+                const isRecipient = wallet.exists(
                   (w) => w.address === (tx as Payment).Destination
                 );
 

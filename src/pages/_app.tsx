@@ -62,7 +62,7 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
             menu={{
               items: [
                 ...wallets.map((_wallet, idx) => {
-                  const isActive = wallet.every(
+                  const isActive = wallet.exists(
                     (w) => w.address === _wallet.address
                   );
 
