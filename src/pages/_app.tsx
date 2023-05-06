@@ -16,6 +16,7 @@ import useDidMount from "beautiful-react-hooks/useDidMount";
 import useLocalStorage from "beautiful-react-hooks/useLocalStorage";
 import Image from "next/image";
 import Link from "next/link";
+import cls from "classnames";
 
 import {
   XrpLedgerContext,
@@ -24,6 +25,8 @@ import {
   NetworkProfile,
 } from "~/hooks/useXrpLedgerHook";
 import { LS_KEY } from "~/consts";
+
+import styles from "./_app.module.css";
 
 import "antd/dist/reset.css";
 
@@ -35,7 +38,7 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
     useContext(XrpLedgerContext);
 
   return (
-    <div className="w-1200px mx-auto">
+    <div className={cls(styles.container, "mx-auto")}>
       <div className="h-80px flex items-center gap-4">
         <Image
           width={200}
@@ -52,7 +55,7 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
               setNetwork(v);
 
               // todo: just do reload for state reset
-              window.location.href = `${window.location.origin}/`
+              window.location.href = `${window.location.origin}/`;
             }}
             options={[
               {

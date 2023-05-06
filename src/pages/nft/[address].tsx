@@ -145,7 +145,7 @@ export default function NFT() {
           </Col>
         )}
       </Row>
-      <div id="scrollableDiv" className="my-12 w-full h-600px overflow-y-auto">
+      <div id="scrollableDiv" className="w-full h-650px overflow-y-auto">
         <InfiniteScroll
           dataLength={nfts.length}
           next={loadMoreNFTs}
