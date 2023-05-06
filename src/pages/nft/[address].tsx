@@ -209,7 +209,7 @@ export default function NFT() {
                     title={
                       <ScannerText
                         className="text-xs"
-                        href={`/ntf/${nft.NFTokenID}`}
+                        href={`/nft/${nft.NFTokenID}`}
                       >
                         {nft.NFTokenID}
                       </ScannerText>
