@@ -4,6 +4,7 @@ import { useCallback, useContext, useState } from "react";
 import { Wallet } from "xrpl";
 import { Maybe } from "monet";
 import useDidMount from "beautiful-react-hooks/useDidMount";
+import useLocalStorage from "beautiful-react-hooks/useLocalStorage";
 
 import { LS_KEY } from "~/consts";
 import { XrpLedgerContext, useXrpLedgerClient } from "~/hooks/useXrpLedgerHook";
@@ -15,23 +16,26 @@ export default function Create() {
   const { setWallet: setContextWallet, setWallets } =
     useContext(XrpLedgerContext);
   const [wallet, setWallet] = useState<Wallet>();
+  const [walletSeeds, setWalletSeeds] = useLocalStorage<string[]>(
+    LS_KEY.WALLET_SEEDS,
+    []
+  );
 
   const generateWallet = useCallback(() => {
     setLoading(true);
     client.forEach((c) => {
+      // warn: testnet logic only
       c.fundWallet()
         .then((res) => {
           setWallet(res.wallet);
 
-          const seeds = JSON.parse(
-            localStorage.getItem(LS_KEY.WALLET_SEEDS) ?? "[]"
-          ) as Array<string>;
+          const seeds = res.wallet.seed
+            ? [...(walletSeeds ?? []), res.wallet.seed]
+            : walletSeeds ?? [];
 
-          seeds.push(res.wallet.seed as string);
+          setWalletSeeds(seeds);
 
-          localStorage.setItem(LS_KEY.WALLET_SEEDS, JSON.stringify(seeds));
-
-          const wallets = seeds.map((seed) => Wallet.fromSeed(seed));
+          const wallets = seeds.map((seed) => Wallet.fromSeed(seed)) ?? [];
 
           setWallets(wallets);
           setContextWallet(Maybe.Some(wallets[0]));
@@ -40,7 +44,7 @@ export default function Create() {
           setLoading(false);
         });
     });
-  }, [client, setContextWallet, setWallets]);
+  }, [client, setContextWallet, setWalletSeeds, setWallets, walletSeeds]);
 
   useDidMount(() => {
     generateWallet();

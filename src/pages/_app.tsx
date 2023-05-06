@@ -13,6 +13,7 @@ import { useRouter } from "next/router";
 import { Maybe } from "monet";
 import { Web3Storage } from "web3.storage";
 import useDidMount from "beautiful-react-hooks/useDidMount";
+import useLocalStorage from "beautiful-react-hooks/useLocalStorage";
 
 import { XrpLedgerContext, DEFAULT_CTX_VALUE } from "~/hooks/useXrpLedgerHook";
 import { LS_KEY } from "~/consts";
@@ -128,19 +129,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   const [ciloClient, setCiloClient] = useState<Maybe<Client>>(Maybe.None());
   const [wallet, setWallet] = useState<Maybe<Wallet>>(Maybe.None());
   const [wallets, setWallets] = useState<Wallet[]>([]);
-
-  useDidMount(() => {
-    if (typeof localStorage.getItem(LS_KEY.WALLET_SEEDS) === "string") {
-      const seeds = JSON.parse(
-        localStorage.getItem(LS_KEY.WALLET_SEEDS) ?? "[]"
-      ) as Array<string>;
-
-      const wallets = seeds.map((seed) => Wallet.fromSeed(seed));
-
-      setWallet(Maybe.Some(wallets[0]));
-      setWallets(wallets);
-    }
-  });
+  const [walletSeeds] = useLocalStorage<string[]>(LS_KEY.WALLET_SEEDS, []);
 
   useDidMount(() => {
     setWeb3Storage(
@@ -151,6 +140,14 @@ function MyApp({ Component, pageProps }: AppProps) {
       )
     );
   });
+
+  // reactive logic of walletSeeds
+  useEffect(() => {
+    const wallets = walletSeeds?.map((seed) => Wallet.fromSeed(seed)) ?? [];
+
+    setWallet(wallets.length > 0 ? Maybe.Some(wallets[0]) : Maybe.None());
+    setWallets(wallets);
+  }, [walletSeeds]);
 
   // reactive logic of network states
   useEffect(() => {

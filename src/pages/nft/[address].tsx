@@ -143,7 +143,12 @@ export default function NFT() {
           next={loadMoreNFTs}
           hasMore={Boolean(nftPage?.PreviousPageMin)}
           loader={<Skeleton className="mt-6" paragraph={{ rows: 1 }} active />}
-          endMessage={<Divider plain>It is all, nothing more 🤐</Divider>}
+          endMessage={
+            // warn: the limit of NFTokenPage is 32
+            nfts.length > 32 && (
+              <Divider plain>It is all, nothing more 🤐</Divider>
+            )
+          }
           scrollableTarget="scrollableDiv"
           hasChildren={nfts.length > 0}
         >

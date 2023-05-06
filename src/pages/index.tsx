@@ -210,7 +210,7 @@ export default function Home() {
       <Divider />
       <div className="flex flex-col items-center">
         <Typography.Title level={3}>TX History</Typography.Title>
-        <div id="scrollableDiv" className="w-full max-h-500px overflow-y-auto">
+        <div id="scrollableDiv" className="w-full h-500px overflow-y-auto">
           <InfiniteScroll
             dataLength={txHistory.map((h) => h.transactions.length).orSome(0)}
             next={loadMoreTxHistory}
@@ -218,7 +218,11 @@ export default function Home() {
             loader={
               <Skeleton className="mt-6" paragraph={{ rows: 1 }} active />
             }
-            endMessage={<Divider plain>It is all, nothing more 🤐</Divider>}
+            endMessage={
+              txHistory.every((h) => h.transactions.length > h.limit) && (
+                <Divider plain>It is all, nothing more 🤐</Divider>
+              )
+            }
             scrollableTarget="scrollableDiv"
           >
             {txHistory
