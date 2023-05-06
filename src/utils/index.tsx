@@ -6,18 +6,8 @@ export const generateNFTokenTaxon = () =>
 export const resolveTxExpiration = (offset: number) =>
   Number.parseInt((Date.now() / 1000 + 946684800 + offset).toFixed(0));
 
-export const parseNFTokenId = (s: string) => {
-  return {
-    flags: Number.parseInt(s.slice(0, 4), 16),
-    fee: normalizeNFTokenTransferFee(Number.parseInt(s.slice(4, 8), 16)),
-    issuer: s.slice(8, 48),
-    taxon: Number.parseInt(s.slice(48, 56), 16),
-    seq: Number.parseInt(s.slice(56), 16),
-  };
-};
-
 export const normalizeNFTokenTransferFee = (fee: number) => {
-  return ((fee * 0.001)).toFixed(3) + " %";
+  return (fee * 0.001).toFixed(3) + " %";
 };
 
 export const parseAccountId = (wallet: Wallet) => {
@@ -25,3 +15,6 @@ export const parseAccountId = (wallet: Wallet) => {
     .accountId.toString("hex")
     .toLocaleUpperCase();
 };
+
+export const percentFormat = (s: number, precision: number = 2) =>
+  (s / 10 ** precision).toFixed(precision) + " %";

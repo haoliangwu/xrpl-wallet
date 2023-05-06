@@ -1,22 +1,19 @@
 import { Button, Result, Typography, Spin } from "antd";
 import { useRouter } from "next/router";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useState } from "react";
 import { Wallet } from "xrpl";
 import { Maybe } from "monet";
+import useDidMount from "beautiful-react-hooks/useDidMount";
 
 import { LS_KEY } from "~/consts";
-import {
-  XrpLedgerContext,
-  useXrpLedgerClient,
-} from "~/hooks/useXrpLedgerHook";
+import { XrpLedgerContext, useXrpLedgerClient } from "~/hooks/useXrpLedgerHook";
 
 export default function Create() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const { client } = useXrpLedgerClient();
-  const { setWallet: setContextWallet, setWallets } = useContext(
-    XrpLedgerContext
-  );
+  const { setWallet: setContextWallet, setWallets } =
+    useContext(XrpLedgerContext);
   const [wallet, setWallet] = useState<Wallet>();
 
   const generateWallet = useCallback(() => {
@@ -45,9 +42,9 @@ export default function Create() {
     });
   }, [client, setContextWallet, setWallets]);
 
-  useEffect(() => {
+  useDidMount(() => {
     generateWallet();
-  }, [generateWallet]);
+  });
 
   return (
     <div className="relative w-100vw h-100vh">

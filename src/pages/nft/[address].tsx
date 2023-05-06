@@ -1,17 +1,30 @@
-import { Button, Card, Col, Empty, Row, Spin, Typography, message } from "antd";
 import {
-  SettingOutlined,
+  Button,
+  Col,
+  Divider,
+  List,
+  Row,
+  Skeleton,
+  Tag,
+  Typography,
+  message,
+} from "antd";
+import {
   ShareAltOutlined,
   EyeOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Client,
-  TxResponse,
+  NFTokenMintFlags,
   convertHexToString,
+  parseNFTokenID,
   xAddressToClassicAddress,
 } from "xrpl";
+import InfiniteScroll from "react-infinite-scroll-component";
+import useDidMount from "beautiful-react-hooks/useDidMount";
 
 import {
   useWeb3Storage,
@@ -38,25 +51,31 @@ export default function NFT() {
   const syncAccountNFTs = useCallback(
     (nftPageId: string) => {
       wallet
-        .map(
-          (w) => (c: Client) =>
-            c
-              .request({
-                command: "ledger_entry",
-                nft_page: nftPageId,
-                ledger_index: "validated",
-              })
-              .then((res) => {
-                // @ts-ignore
-                return res.result.node as NFTokenPage;
-              })
-        )
+        .map((w) => (c: Client) => {
+          setLoading(true);
+          return c
+            .request({
+              command: "ledger_entry",
+              nft_page: nftPageId,
+              ledger_index: "validated",
+            })
+            .then((res) => {
+              // @ts-ignore
+              return res.result.node as NFTokenPage;
+            })
+            .finally(() => {
+              setLoading(false);
+            });
+        })
         .apTo(client)
         .forEach((defer) => {
           defer
             .then((res) => {
               setNftPage(res);
-              setNFTs(res.NFTokens.map((t) => t.NFToken));
+              setNFTs((prev) => [
+                ...prev,
+                ...res.NFTokens.map((t) => t.NFToken),
+              ]);
             })
             .catch((err: Error) => {
               console.error(err);
@@ -69,22 +88,25 @@ export default function NFT() {
     [wallet, client]
   );
 
+  const loadMoreNFTs = () => {
+    if (loading) {
+      return;
+    }
+
+    syncAccountNFTs(nftPage?.PreviousPageMin ?? "");
+  };
+
   // init logic when comp is mounted
-  useEffect(() => {
+  useDidMount(() => {
     wallet.forEach((w) => {
       return syncAccountNFTs(`${parseAccountId(w)}FFFFFFFFFFFFFFFFFFFFFFFF`);
     });
-  }, [syncAccountNFTs, wallet]);
+  });
 
   const { classicAddress } = xAddressToClassicAddress(xAddress as string);
 
   return (
     <div>
-      {loading && (
-        <div className="fixed top-0 left-0 w-100vw h-100vh z-10 bg-[rgba(123,123,123,0.5)] flex items-center justify-center">
-          <Spin />
-        </div>
-      )}
       <Row>
         <Col span={16}>
           <Typography.Title level={3}>
@@ -112,65 +134,41 @@ export default function NFT() {
           </Col>
         )}
       </Row>
-      <Row gutter={16}>
-        <Col span={8} offset={8} className="text-center">
-          <Button
-            onClick={() => syncAccountNFTs(nftPage?.NextPageMin!)}
-            disabled={!nftPage?.NextPageMin}
-            className="mr-4"
-          >
-            Prev
-          </Button>
-          <Button
-            onClick={() => syncAccountNFTs(nftPage?.PreviousPageMin!)}
-            disabled={!nftPage?.PreviousPageMin}
-          >
-            Next
-          </Button>
-        </Col>
-      </Row>
-      <Row gutter={16} className="items-center my-12">
-        {nfts.length > 0 ? (
-          nfts.map((nft) => {
-            const normalizedUri = nft.URI
-              ? `https://ipfs.io/ipfs/${convertHexToString(nft.URI ?? "")}`
-              : "";
+      <div
+        id="scrollableDiv"
+        className="my-12 w-full max-h-600px overflow-y-auto"
+      >
+        <InfiniteScroll
+          dataLength={nfts.length}
+          next={loadMoreNFTs}
+          hasMore={Boolean(nftPage?.PreviousPageMin)}
+          loader={<Skeleton className="mt-6" paragraph={{ rows: 1 }} active />}
+          endMessage={<Divider plain>It is all, nothing more 🤐</Divider>}
+          scrollableTarget="scrollableDiv"
+          hasChildren={nfts.length > 0}
+        >
+          <List
+            itemLayout="vertical"
+            size="large"
+            dataSource={nfts}
+            renderItem={(nft) => {
+              const normalizedUri = nft.URI
+                ? `https://ipfs.io/ipfs/${convertHexToString(nft.URI ?? "")}`
+                : "";
+              const parsedNFToken = parseNFTokenID(nft.NFTokenID);
 
-            return (
-              <Col className="mb-4" key={nft.NFTokenID} span={6}>
-                <Card
-                  cover={
-                    nft.URI ? (
-                      // eslint-disable-next-line
-                      <img
-                        width={300}
-                        height={200}
-                        className="object-cover"
-                        alt="nft cover"
-                        src={normalizedUri}
-                      />
-                    ) : null
-                  }
+              return (
+                <List.Item
+                  key={nft.NFTokenID}
                   actions={[
-                    isSelf ? (
-                      <Button
-                        type="link"
-                        key="sell"
-                        icon={<SettingOutlined />}
-                        onClick={() => {
-                          router.push(`${router.asPath}/${nft.NFTokenID}`);
-                        }}
-                      />
-                    ) : (
-                      <Button
-                        type="link"
-                        key="buy"
-                        icon={<EyeOutlined />}
-                        onClick={() => {
-                          router.push(`${router.asPath}/${nft.NFTokenID}`);
-                        }}
-                      />
-                    ),
+                    <Button
+                      type="link"
+                      key="buy"
+                      icon={isSelf ? <SettingOutlined /> : <EyeOutlined />}
+                      onClick={() => {
+                        router.push(`${router.asPath}/${nft.NFTokenID}`);
+                      }}
+                    />,
                     <Button
                       type="link"
                       key="link"
@@ -181,35 +179,48 @@ export default function NFT() {
                       }}
                     />,
                   ]}
+                  extra={
+                    nft.URI ? (
+                      // eslint-disable-next-line
+                      <img
+                        width={272}
+                        className="object-cover"
+                        alt="nft cover"
+                        src={normalizedUri}
+                      />
+                    ) : null
+                  }
                 >
-                  <Card.Meta description={nft.NFTokenID} />
-                </Card>
-              </Col>
-            );
-          })
-        ) : (
-          <Col offset={8} span={8}>
-            <Empty />
-          </Col>
-        )}
-      </Row>
-      <Row gutter={16}>
-        <Col span={8} offset={8} className="text-center">
-          <Button
-            onClick={() => syncAccountNFTs(nftPage?.NextPageMin!)}
-            disabled={!nftPage?.NextPageMin}
-            className="mr-4"
-          >
-            Prev
-          </Button>
-          <Button
-            onClick={() => syncAccountNFTs(nftPage?.PreviousPageMin!)}
-            disabled={!nftPage?.PreviousPageMin}
-          >
-            Next
-          </Button>
-        </Col>
-      </Row>
+                  <List.Item.Meta
+                    title={
+                      <ScannerText
+                        className="text-xs"
+                        href={`/ntf/${nft.NFTokenID}`}
+                      >
+                        {nft.NFTokenID}
+                      </ScannerText>
+                    }
+                    description={
+                      <div className="flex gap-2">
+                        {Boolean(
+                          NFTokenMintFlags.tfBurnable & parsedNFToken.Flags
+                        ) && <Tag>Burnable</Tag>}
+                        {Boolean(
+                          NFTokenMintFlags.tfOnlyXRP & parsedNFToken.Flags
+                        ) && <Tag>OnlyXRP</Tag>}
+                        {Boolean(
+                          NFTokenMintFlags.tfTransferable & parsedNFToken.Flags
+                        ) && <Tag>Transferable</Tag>}
+                      </div>
+                    }
+                  />
+                  {/* todo: the nft content */}
+                </List.Item>
+              );
+            }}
+          ></List>
+        </InfiniteScroll>
+      </div>
     </div>
   );
 }

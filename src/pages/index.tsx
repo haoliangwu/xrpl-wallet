@@ -20,6 +20,7 @@ import {
 import { useRouter } from "next/router";
 import { Maybe } from "monet";
 import InfiniteScroll from "react-infinite-scroll-component";
+import useDidMount from "beautiful-react-hooks/useDidMount";
 
 import {
   useXrpLedgerClient,
@@ -141,11 +142,11 @@ export default function Home() {
   };
 
   // init logic when comp is mounted
-  useEffect(() => {
+  useDidMount(() => {
     syncAccountInfo();
     syncAccountNFTs();
     syncAccountTxHistory();
-  }, [syncAccountInfo, syncAccountNFTs, syncAccountTxHistory]);
+  });
 
   // real-time subscription
   useEffect(() => {

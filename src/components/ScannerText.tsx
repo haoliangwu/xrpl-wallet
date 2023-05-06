@@ -6,15 +6,22 @@ import { XrpLogoIcon, IpfsLogoIcon } from "./Icons";
 const isTestNet = (s: string) => s.indexOf("altnet.rippletest.net");
 
 const ScannerText: React.FC<
-  PropsWithChildren<{ href: string; className?: string; type?: "xrp" | "ipfs" }>
-> = ({ children, href, className, type = "xrp" }) => {
+  PropsWithChildren<{
+    href: string;
+    className?: string;
+    type?: "xrp" | "ipfs";
+    bordered?: boolean;
+  }>
+> = ({ children, href, className, type = "xrp", bordered = true }) => {
   const { network } = useXrpLedgerClient();
 
   return (
     <div
       className={cls(
         className,
-        "flex-inline items-center gap-1 pb-1 border-b-1 border-b-solid border-b-transparent break-all hover:border-b-#cccccc hover:cursor-pointer"
+        "flex-inline items-center gap-1 pb-1 break-all  hover:cursor-pointer",
+        bordered &&
+          "border-b-1 border-b-solid border-b-transparent hover:border-b-#cccccc"
       )}
       onClick={() => {
         if (type === "xrp") {

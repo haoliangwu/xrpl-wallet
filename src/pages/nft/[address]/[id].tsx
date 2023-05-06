@@ -16,7 +16,7 @@ import {
   Tag,
 } from "antd";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   Client,
   NFTBuyOffersResponse,
@@ -25,9 +25,11 @@ import {
   NFTokenMintFlags,
   TxResponse,
   dropsToXrp,
+  parseNFTokenID,
   xAddressToClassicAddress,
   xrpToDrops,
 } from "xrpl";
+import useDidMount from "beautiful-react-hooks/useDidMount";
 
 import {
   useWeb3Storage,
@@ -35,7 +37,7 @@ import {
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
 import { ArrayElement, CiloNFTokenResponse } from "~/types";
-import { parseNFTokenId, resolveTxExpiration } from "~/utils";
+import { percentFormat, resolveTxExpiration } from "~/utils";
 import ScannerText from "~/components/ScannerText";
 
 export default function NFTDetail() {
@@ -136,9 +138,9 @@ export default function NFTDetail() {
   }, [wallet, client, ciloClient, id, router]);
 
   // init logic when comp is mounted
-  useEffect(() => {
+  useDidMount(() => {
     syncAccountNFTs();
-  }, [syncAccountNFTs]);
+  });
 
   const [isModalOpenSell, setIsModalOpenSell] = useState(false);
   const formRefSell = useRef<FormInstance>(null);
@@ -147,8 +149,10 @@ export default function NFTDetail() {
 
   const normalizedUri = nft?.uri ? `https://ipfs.io/ipfs/${nft.uri}` : "";
 
-  const parsedNFToken = parseNFTokenId(id as string);
+  const parsedNFToken = parseNFTokenID(id as string);
   const { classicAddress } = xAddressToClassicAddress(xAddress as string);
+
+  console.log(parsedNFToken);
 
   return (
     <div>
@@ -352,26 +356,26 @@ export default function NFTDetail() {
             layout="vertical"
           >
             <Descriptions.Item label="Sequence">
-              {parsedNFToken.seq}
+              {parsedNFToken.Sequence}
             </Descriptions.Item>
             <Descriptions.Item label="Taxon">
-              {parsedNFToken.taxon}
+              {parsedNFToken.Taxon}
             </Descriptions.Item>
             <Descriptions.Item label="Fee">
-              {parsedNFToken.fee}
+              {percentFormat(parsedNFToken.TransferFee, 3)}
             </Descriptions.Item>
             <Descriptions.Item label="Issuer" span={2}>
-              {parsedNFToken.issuer}
+              {parsedNFToken.Issuer}
             </Descriptions.Item>
             <Descriptions.Item label="Flags">
-              {Boolean(NFTokenMintFlags.tfBurnable & parsedNFToken.flags) && (
+              {Boolean(NFTokenMintFlags.tfBurnable & parsedNFToken.Flags) && (
                 <Tag>Burnable</Tag>
               )}
-              {Boolean(NFTokenMintFlags.tfOnlyXRP & parsedNFToken.flags) && (
+              {Boolean(NFTokenMintFlags.tfOnlyXRP & parsedNFToken.Flags) && (
                 <Tag>OnlyXRP</Tag>
               )}
               {Boolean(
-                NFTokenMintFlags.tfTransferable & parsedNFToken.flags
+                NFTokenMintFlags.tfTransferable & parsedNFToken.Flags
               ) && <Tag>Transferable</Tag>}
             </Descriptions.Item>
           </Descriptions>

@@ -3,7 +3,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import { CheckOutlined, UserOutlined } from "@ant-design/icons";
@@ -13,6 +12,7 @@ import { Avatar, Dropdown, Select, Spin } from "antd";
 import { useRouter } from "next/router";
 import { Maybe } from "monet";
 import { Web3Storage } from "web3.storage";
+import useDidMount from "beautiful-react-hooks/useDidMount";
 
 import { XrpLedgerContext, DEFAULT_CTX_VALUE } from "~/hooks/useXrpLedgerHook";
 import { LS_KEY } from "~/consts";
@@ -95,7 +95,9 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
                   key: "nft",
                   label: (
                     <Link
-                      href={`/nft/${wallet.map((w) => w.getXAddress()).orSome("")}`}
+                      href={`/nft/${wallet
+                        .map((w) => w.getXAddress())
+                        .orSome("")}`}
                     >
                       My NFTs
                     </Link>
@@ -127,7 +129,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   const [wallet, setWallet] = useState<Maybe<Wallet>>(Maybe.None());
   const [wallets, setWallets] = useState<Wallet[]>([]);
 
-  useEffect(() => {
+  useDidMount(() => {
     if (typeof localStorage.getItem(LS_KEY.WALLET_SEEDS) === "string") {
       const seeds = JSON.parse(
         localStorage.getItem(LS_KEY.WALLET_SEEDS) ?? "[]"
@@ -138,8 +140,19 @@ function MyApp({ Component, pageProps }: AppProps) {
       setWallet(Maybe.Some(wallets[0]));
       setWallets(wallets);
     }
-  }, [router]);
+  });
 
+  useDidMount(() => {
+    setWeb3Storage(
+      Maybe.Some(
+        new Web3Storage({
+          token: process.env.NEXT_PUBLIC_WEB3STORAGE_TOKEN as string,
+        })
+      )
+    );
+  });
+
+  // reactive logic of network states
   useEffect(() => {
     const _client = new Client(network);
 
@@ -167,16 +180,6 @@ function MyApp({ Component, pageProps }: AppProps) {
       });
     };
   }, [ciloNetwork]);
-
-  useEffect(() => {
-    setWeb3Storage(
-      Maybe.Some(
-        new Web3Storage({
-          token: process.env.NEXT_PUBLIC_WEB3STORAGE_TOKEN as string,
-        })
-      )
-    );
-  }, []);
 
   const ctx = useMemo(() => {
     return {
