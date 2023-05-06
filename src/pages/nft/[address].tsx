@@ -25,6 +25,7 @@ import {
 } from "xrpl";
 import InfiniteScroll from "react-infinite-scroll-component";
 import useDidMount from "beautiful-react-hooks/useDidMount";
+import { Maybe } from "monet";
 
 import {
   useWeb3Storage,
@@ -43,7 +44,7 @@ export default function NFT() {
   const { wallet } = useXrpLedgerWallet();
   const { web3Storage } = useWeb3Storage();
 
-  const [nftPage, setNftPage] = useState<NFTokenPage>();
+  const [nftPage, setNftPage] = useState<Maybe<NFTokenPage>>(Maybe.None());
   const [nfts, setNFTs] = useState<Array<NFToken>>([]);
 
   const isSelf = wallet.every((w) => w.getXAddress() === xAddress);
@@ -71,7 +72,7 @@ export default function NFT() {
         .forEach((defer) => {
           defer
             .then((res) => {
-              setNftPage(res);
+              setNftPage(Maybe.Some(res));
               setNFTs((prev) => [
                 ...prev,
                 ...res.NFTokens.map((t) => t.NFToken),
@@ -80,7 +81,7 @@ export default function NFT() {
             .catch((err: Error) => {
               console.error(err);
 
-              setNftPage(undefined);
+              setNftPage(Maybe.None());
               setNFTs([]);
             });
         });
@@ -93,7 +94,12 @@ export default function NFT() {
       return;
     }
 
-    syncAccountNFTs(nftPage?.PreviousPageMin ?? "");
+    nftPage
+      .filter((p) => Boolean(p.PreviousPageMin))
+      .map((p) => p.PreviousPageMin!)
+      .forEach((pageIndex) => {
+        syncAccountNFTs(pageIndex);
+      });
   };
 
   // init logic when comp is mounted
@@ -141,7 +147,7 @@ export default function NFT() {
         <InfiniteScroll
           dataLength={nfts.length}
           next={loadMoreNFTs}
-          hasMore={Boolean(nftPage?.PreviousPageMin)}
+          hasMore={nftPage.every((p) => Boolean(p.PreviousPageMin))}
           loader={<Skeleton className="mt-6" paragraph={{ rows: 1 }} active />}
           endMessage={
             // warn: the limit of NFTokenPage is 32
