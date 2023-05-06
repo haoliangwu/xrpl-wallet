@@ -4,6 +4,7 @@ import {
   Wallet,
   decodeXAddress,
   isValidXAddress,
+  isoTimeToRippleTime,
 } from "xrpl";
 
 // use 2 ** 30 as the max limit due to parseNFTokenID resolve to minus Taxon in edge-case
@@ -11,8 +12,8 @@ import {
 export const generateNFTokenTaxon = () =>
   Number.parseInt(String(Math.random() * 2 ** 30));
 
-export const resolveTxExpiration = (offset: number) =>
-  Number.parseInt((Date.now() / 1000 + 946684800 + offset).toFixed(0));
+export const resolveTxExpiration = (offsetInMs: number) =>
+  isoTimeToRippleTime(new Date(Date.now() + offsetInMs));
 
 export const normalizeNFTokenTransferFee = (fee: number) => {
   return (fee * 0.001).toFixed(3) + " %";

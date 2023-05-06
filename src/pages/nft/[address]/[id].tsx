@@ -26,12 +26,14 @@ import {
   TxResponse,
   dropsToXrp,
   parseNFTokenID,
+  rippleTimeToUnixTime,
   xAddressToClassicAddress,
   xrpToDrops,
 } from "xrpl";
 import useDidMount from "beautiful-react-hooks/useDidMount";
 import { Maybe } from "monet";
 import Link from "next/link";
+import dayjs from "dayjs";
 
 import {
   useWeb3Storage,
@@ -401,13 +403,23 @@ export default function NFTDetail() {
                 <List.Item>
                   <div className="flex-auto">
                     <div className="flex">
-                      <Typography.Text>{item.nft_offer_index}</Typography.Text>
+                      <Typography.Text className="font-medium mb-1">
+                        {item.nft_offer_index}
+                      </Typography.Text>
                     </div>
-                    <Typography.Text mark>
-                      {dropsToXrp(item.amount.toString())}
-                    </Typography.Text>
-                    <span className="mx-1">XRP /</span>
-                    <Typography.Text>{item.owner}</Typography.Text>
+                    <div className="flex gap-1">
+                      <Typography.Text mark>
+                        {dropsToXrp(item.amount.toString())} XRP
+                      </Typography.Text>
+                      <span>offered by</span>
+                      <Typography.Text mark>{item.owner}</Typography.Text>
+                      <span>will expire on</span>
+                      <Typography.Text mark>
+                        {dayjs(
+                          new Date(rippleTimeToUnixTime(item.expiration ?? 0))
+                        ).format("YYYY-MM-DD HH:mm:ss")}
+                      </Typography.Text>
+                    </div>
                   </div>
                 </List.Item>
               )}
@@ -430,7 +442,9 @@ export default function NFTDetail() {
                 <List.Item>
                   <div className="flex-auto">
                     <div className="flex">
-                      <Typography.Text>{item.nft_offer_index}</Typography.Text>
+                      <Typography.Text className="font-medium mb-1">
+                        {item.nft_offer_index}
+                      </Typography.Text>
                       <span className="flex-auto" />
                       <Checkbox
                         checked={buyOffer.exists(
@@ -439,11 +453,19 @@ export default function NFTDetail() {
                         onClick={() => setBuyOffer(Maybe.Some(item))}
                       />
                     </div>
-                    <Typography.Text mark>
-                      {dropsToXrp(item.amount.toString())}
-                    </Typography.Text>
-                    <span className="mx-1">XRP /</span>
-                    <Typography.Text>{item.owner}</Typography.Text>
+                    <div className="flex gap-1">
+                      <Typography.Text mark>
+                        {dropsToXrp(item.amount.toString())} XRP
+                      </Typography.Text>
+                      <span>offered by</span>
+                      <Typography.Text mark>{item.owner}</Typography.Text>
+                      <span>will expire on</span>
+                      <Typography.Text mark>
+                        {dayjs(
+                          new Date(rippleTimeToUnixTime(item.expiration ?? 0))
+                        ).format("YYYY-MM-DD HH:mm:ss")}
+                      </Typography.Text>
+                    </div>
                   </div>
                 </List.Item>
               )}
@@ -473,7 +495,7 @@ export default function NFTDetail() {
                   // todo: it is better to be broker
                   Destination: "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
                   // todo: it could be customized
-                  Expiration: resolveTxExpiration(3600 * 24 * 7),
+                  Expiration: resolveTxExpiration(1000 * 3600 * 24 * 7),
                 })
                 .then((prepared) => {
                   return c.submitAndWait(w.sign(prepared).tx_blob);
@@ -535,7 +557,7 @@ export default function NFTDetail() {
                   Amount: xrpToDrops(formRefBuy.current?.getFieldValue("qty")),
                   Destination: classicAddress as string,
                   // todo: it could be customized
-                  Expiration: resolveTxExpiration(3600 * 24 * 7),
+                  Expiration: resolveTxExpiration(1000 * 3600 * 24 * 7),
                 })
                 .then((prepared) => {
                   return c.submitAndWait(w.sign(prepared).tx_blob);
