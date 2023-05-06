@@ -14,16 +14,21 @@ import { Maybe } from "monet";
 import { Web3Storage } from "web3.storage";
 import useDidMount from "beautiful-react-hooks/useDidMount";
 import useLocalStorage from "beautiful-react-hooks/useLocalStorage";
+import Image from "next/image";
+import Link from "next/link";
 
-import { XrpLedgerContext, DEFAULT_CTX_VALUE } from "~/hooks/useXrpLedgerHook";
+import {
+  XrpLedgerContext,
+  DEFAULT_CTX_VALUE,
+  NETWORK_PROFILES,
+  NetworkProfile,
+} from "~/hooks/useXrpLedgerHook";
 import { LS_KEY } from "~/consts";
 
 import "antd/dist/reset.css";
 
 import "../styles/globals.css";
 import "../styles/uno.css";
-import Image from "next/image";
-import Link from "next/link";
 
 const Layout: React.FC<PropsWithChildren> = ({ children }) => {
   const { network, setNetwork, wallet, wallets, setWallet } =
@@ -43,16 +48,20 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
           <Select
             value={network}
             // todo: also change cilo server network
-            onChange={(v) => setNetwork(v)}
+            onChange={(v) => {
+              setNetwork(v);
+
+              // todo: just do reload for state reset
+              window.location.href = `${window.location.origin}/`
+            }}
             options={[
               {
-                value: "wss://s.altnet.rippletest.net:51233",
+                value: "test",
                 label: "TestNet",
               },
               {
-                value: "wss://s.devnet.rippletest.net:51233/",
+                value: "dev",
                 label: "DevNet",
-                disabled: true,
               },
             ]}
           />
@@ -120,8 +129,10 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
 
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const [network, setNetwork] = useState(DEFAULT_CTX_VALUE.network);
-  const [ciloNetwork, setCiloNetwork] = useState(DEFAULT_CTX_VALUE.ciloNetwork);
+  const [network, setNetwork] = useLocalStorage<NetworkProfile>(
+    LS_KEY.NETWORK,
+    DEFAULT_CTX_VALUE.network
+  );
   const [web3Storage, setWeb3Storage] = useState<Maybe<Web3Storage>>(
     Maybe.None()
   );
@@ -129,7 +140,10 @@ function MyApp({ Component, pageProps }: AppProps) {
   const [ciloClient, setCiloClient] = useState<Maybe<Client>>(Maybe.None());
   const [wallet, setWallet] = useState<Maybe<Wallet>>(Maybe.None());
   const [wallets, setWallets] = useState<Wallet[]>([]);
-  const [walletSeeds] = useLocalStorage<string[]>(LS_KEY.WALLET_SEEDS, []);
+  const [walletSeeds] = useLocalStorage<string[]>(
+    `${LS_KEY.WALLET_SEEDS}/${network}`,
+    []
+  );
 
   useDidMount(() => {
     setWeb3Storage(
@@ -151,7 +165,9 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   // reactive logic of network states
   useEffect(() => {
-    const _client = new Client(network);
+    const networkProfile = NETWORK_PROFILES[network ?? "test"];
+
+    const _client = new Client(networkProfile.xrpl);
 
     _client.connect().then(() => {
       setClient(Maybe.Some(_client));
@@ -165,7 +181,9 @@ function MyApp({ Component, pageProps }: AppProps) {
   }, [network]);
 
   useEffect(() => {
-    const _client = new Client(ciloNetwork);
+    const networkProfile = NETWORK_PROFILES[network ?? "test"];
+
+    const _client = new Client(networkProfile.cilo);
 
     _client.connect().then(() => {
       setCiloClient(Maybe.Some(_client));
@@ -176,7 +194,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         setCiloClient(Maybe.None());
       });
     };
-  }, [ciloNetwork]);
+  }, [network]);
 
   const ctx = useMemo(() => {
     return {
@@ -185,14 +203,12 @@ function MyApp({ Component, pageProps }: AppProps) {
       ciloClient,
       wallet,
       wallets,
-      network,
+      network: network ?? "test",
       setNetwork,
-      ciloNetwork,
-      setCiloNetwork,
       setWallet,
       setWallets,
     };
-  }, [web3Storage, client, ciloClient, wallet, wallets, network, ciloNetwork]);
+  }, [web3Storage, client, ciloClient, wallet, wallets, network, setNetwork]);
 
   // @ts-ignore
   const getLayout = Component.getLayout;

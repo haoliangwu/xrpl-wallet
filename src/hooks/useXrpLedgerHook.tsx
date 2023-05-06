@@ -4,16 +4,32 @@ import { Client, Wallet } from "xrpl";
 import { Maybe } from "monet";
 import { Web3Storage } from "web3.storage";
 
+export type NetworkProfile = "dev" | "test";
+
+export const NETWORK_PROFILES: {
+  [k in NetworkProfile]: {
+    xrpl: string;
+    cilo: string;
+  };
+} = {
+  dev: {
+    xrpl: "wss://s.devnet.rippletest.net:51233/",
+    cilo: "wss://clio.devnet.rippletest.net:51233/",
+  },
+  test: {
+    xrpl: "wss://s.altnet.rippletest.net:51233",
+    cilo: "wss://clio.altnet.rippletest.net:51233",
+  },
+};
+
 interface XrpLedgerContext {
   web3Storage: Maybe<Web3Storage>;
   client: Maybe<Client>;
   ciloClient: Maybe<Client>;
   wallet: Maybe<Wallet>;
   wallets: Wallet[];
-  network: string;
-  setNetwork: Dispatch<SetStateAction<string>>;
-  ciloNetwork: string;
-  setCiloNetwork: Dispatch<SetStateAction<string>>;
+  network: NetworkProfile;
+  setNetwork: Dispatch<SetStateAction<NetworkProfile>>;
   setWallet: Dispatch<SetStateAction<Maybe<Wallet>>>;
   setWallets: Dispatch<SetStateAction<Wallet[]>>;
 }
@@ -23,11 +39,9 @@ export const DEFAULT_CTX_VALUE: XrpLedgerContext = {
   client: Maybe.None(),
   ciloClient: Maybe.None(),
   wallet: Maybe.None(),
-  network: "wss://s.altnet.rippletest.net:51233",
-  ciloNetwork: "wss://clio.altnet.rippletest.net:51233",
+  network: "test",
   wallets: [],
   setNetwork: () => {},
-  setCiloNetwork: () => {},
   setWallet: () => {},
   setWallets: () => {},
 };
@@ -36,22 +50,14 @@ export const XrpLedgerContext =
   createContext<XrpLedgerContext>(DEFAULT_CTX_VALUE);
 
 export function useXrpLedgerClient() {
-  const {
-    client,
-    ciloClient,
-    network,
-    setNetwork,
-    ciloNetwork,
-    setCiloNetwork,
-  } = useContext(XrpLedgerContext);
+  const { client, ciloClient, network, setNetwork } =
+    useContext(XrpLedgerContext);
 
   return {
     client,
     ciloClient,
     network,
     setNetwork,
-    ciloNetwork,
-    setCiloNetwork,
   };
 }
 

@@ -12,12 +12,12 @@ import { XrpLedgerContext, useXrpLedgerClient } from "~/hooks/useXrpLedgerHook";
 export default function Create() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const { client } = useXrpLedgerClient();
+  const { client, network } = useXrpLedgerClient();
   const { setWallet: setContextWallet, setWallets } =
     useContext(XrpLedgerContext);
   const [wallet, setWallet] = useState<Wallet>();
   const [walletSeeds, setWalletSeeds] = useLocalStorage<string[]>(
-    LS_KEY.WALLET_SEEDS,
+    `${LS_KEY.WALLET_SEEDS}/${network}`,
     []
   );
 
