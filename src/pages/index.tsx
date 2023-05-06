@@ -1,18 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { SmileOutlined } from "@ant-design/icons";
-import { Typography, Divider, Button, Result } from "antd";
+import { Typography, Divider, Button, Result, Descriptions } from "antd";
 import {
   AccountInfoResponse,
   dropsToXrp,
-  TransactionStream,
   AccountTxResponse,
   Payment,
   Client,
   convertHexToString,
+  AccountNFTsResponse,
 } from "xrpl";
 import { useRouter } from "next/router";
 import { Maybe } from "monet";
-import Link from "next/link";
 
 import {
   useXrpLedgerClient,
@@ -23,8 +22,12 @@ import { parseAccountId } from "~/utils";
 
 export default function Home() {
   const router = useRouter();
-  const [account, setAccount] =
-    useState<AccountInfoResponse["result"]["account_data"]>();
+  const [account, setAccount] = useState<
+    Maybe<AccountInfoResponse["result"]["account_data"]>
+  >(Maybe.None());
+  const [nfts, setNFTs] = useState<
+    AccountNFTsResponse["result"]["account_nfts"]
+  >([]);
 
   const { client, network, setNetwork } = useXrpLedgerClient();
   const { wallet, wallets, setWallet } = useXrpLedgerWallet();
@@ -44,8 +47,26 @@ export default function Home() {
       )
       .apTo(client)
       .forEach((defer) => {
-        defer.then((account) => {
-          setAccount(account.result.account_data);
+        defer.then((res) => {
+          setAccount(Maybe.Some(res.result.account_data));
+        });
+      });
+  }, [client, wallet]);
+
+  const syncAccountNFTs = useCallback(() => {
+    wallet
+      .map(
+        (w) => (c: Client) =>
+          c.request({
+            command: "account_nfts",
+            account: w.address,
+            ledger_index: "validated",
+          })
+      )
+      .apTo(client)
+      .forEach((defer) => {
+        defer.then((res) => {
+          setNFTs(res.result.account_nfts);
         });
       });
   }, [client, wallet]);
@@ -70,16 +91,18 @@ export default function Home() {
   // init logic when comp is mounted
   useEffect(() => {
     syncAccountInfo();
+    syncAccountNFTs();
     syncAccountTxHistory();
-  }, [syncAccountInfo, syncAccountTxHistory]);
+  }, [syncAccountInfo, syncAccountNFTs, syncAccountTxHistory]);
 
   // real-time subscription
   useEffect(() => {
     if (wallets.length <= 0) return;
 
-    const handler = async (ts: TransactionStream) => {
+    const handler = async () => {
       syncAccountInfo();
       syncAccountTxHistory();
+      syncAccountNFTs();
     };
 
     client.forEach((c) => {
@@ -99,47 +122,41 @@ export default function Home() {
         c.off("transaction", handler);
       });
     };
-  }, [client, wallets, syncAccountInfo, syncAccountTxHistory]);
+  }, [client, wallets, syncAccountInfo, syncAccountTxHistory, syncAccountNFTs]);
 
   return wallet.isSome() ? (
     <>
-      <div className="text-center">
-        <Typography.Title level={4}>Account ID</Typography.Title>
-        <Typography.Text copyable>
-          {wallet.map((w) => parseAccountId(w)).orSome("-")}
-        </Typography.Text>
-        <Typography.Title level={4}>Address</Typography.Title>
-        <Typography.Text copyable>{wallet.some().address}</Typography.Text>
-      </div>
-      <Divider />
-      <div className="flex flex-col items-center">
-        <Typography.Title level={4}>Balance</Typography.Title>
-        <div>
-          {account?.Balance ? dropsToXrp(account.Balance) : "-"}
+      <Descriptions
+        title={
+          <Typography.Title level={3} className="text-center">
+            User Profile
+          </Typography.Title>
+        }
+        layout="vertical"
+        column={6}
+      >
+        <Descriptions.Item label="Account ID" span={2}>
+          <Typography.Text copyable>
+            {wallet.map((w) => parseAccountId(w)).orSome("-")}
+          </Typography.Text>
+        </Descriptions.Item>
+        <Descriptions.Item label="Address" span={2}>
+          <Typography.Text copyable>
+            {wallet.map((w) => w.address).orSome("-")}
+          </Typography.Text>
+        </Descriptions.Item>
+        <Descriptions.Item label="Balance">
+          {account.map((a) => dropsToXrp(a.Balance)).orSome("-")}
           <span className="ml-1">XRP</span>
-        </div>
-        <div className="flex gap-4 mt-4">
-          <Button
-            type="primary"
-            onClick={() => {
-              router.push("/send-tx");
-            }}
-          >
-            Send Tx
-          </Button>
-          <Button
-            type="primary"
-            onClick={() => {
-              router.push("/nft/create");
-            }}
-          >
-            Mint NFT
-          </Button>
-        </div>
-      </div>
+        </Descriptions.Item>
+        <Descriptions.Item label="NFTs">
+          {nfts.length}
+          <span className="ml-1">Unit</span>
+        </Descriptions.Item>
+      </Descriptions>
       <Divider />
       <div className="flex flex-col items-center">
-        <Typography.Title level={4}>History</Typography.Title>
+        <Typography.Title level={3}>TX History</Typography.Title>
         <div className="w-full max-h-500px overflow-y-auto ">
           {txHistory.map(({ tx }) => {
             const isRecipient = wallet.every(
