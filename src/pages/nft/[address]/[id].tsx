@@ -40,7 +40,7 @@ import {
   useXrpLedgerClient,
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
-import { ArrayElement, CiloNFTokenResponse } from "~/types";
+import { ArrayElement, CiloNFTokenResponse, NFTokenOffer } from "~/types";
 import { percentFormat, resolveTxExpiration } from "~/utils";
 import ScannerText from "~/components/ScannerText";
 
@@ -403,9 +403,31 @@ export default function NFTDetail() {
                 <List.Item>
                   <div className="flex-auto">
                     <div className="flex">
-                      <Typography.Text className="font-medium mb-1">
-                        {item.nft_offer_index}
-                      </Typography.Text>
+                      <ScannerText
+                        href={() =>
+                          client
+                            .map((c) =>
+                              c
+                                .request({
+                                  command: "ledger_entry",
+                                  index: item.nft_offer_index,
+                                  ledger_index: "validated",
+                                })
+                                .then((res) => {
+                                  return `/transactions/${
+                                    // @ts-ignore
+                                    (res.result.node as NFTokenOffer)
+                                      .PreviousTxnID
+                                  }`;
+                                })
+                            )
+                            .orSome(Promise.resolve(""))
+                        }
+                      >
+                        <Typography.Text className="font-medium">
+                          {item.nft_offer_index}
+                        </Typography.Text>
+                      </ScannerText>
                     </div>
                     <div className="flex gap-1">
                       <Typography.Text mark>
@@ -442,9 +464,31 @@ export default function NFTDetail() {
                 <List.Item>
                   <div className="flex-auto">
                     <div className="flex">
-                      <Typography.Text className="font-medium mb-1">
-                        {item.nft_offer_index}
-                      </Typography.Text>
+                      <ScannerText
+                        href={() =>
+                          client
+                            .map((c) =>
+                              c
+                                .request({
+                                  command: "ledger_entry",
+                                  index: item.nft_offer_index,
+                                  ledger_index: "validated",
+                                })
+                                .then((res) => {
+                                  return `/transactions/${
+                                    // @ts-ignore
+                                    (res.result.node as NFTokenOffer)
+                                      .PreviousTxnID
+                                  }`;
+                                })
+                            )
+                            .orSome(Promise.resolve(""))
+                        }
+                      >
+                        <Typography.Text className="font-medium">
+                          {item.nft_offer_index}
+                        </Typography.Text>
+                      </ScannerText>
                       <span className="flex-auto" />
                       <Checkbox
                         checked={buyOffer.exists(

@@ -1,4 +1,4 @@
-import { AccountNFTsResponse } from "xrpl";
+import { AccountNFTsResponse, NFTokenCreateOfferFlags } from "xrpl";
 import BaseLedgerEntry from "xrpl/dist/npm/models/ledger/BaseLedgerEntry";
 import { BaseResponse } from "xrpl/dist/npm/models/methods/baseMethod";
 
@@ -17,6 +17,20 @@ export interface NFTokenPage extends BaseLedgerEntry {
   PreviousPageMin?: string;
   PreviousTxnID?: string;
   PreviousTxnLgrSeq?: number;
+}
+
+export interface NFTokenOffer extends BaseLedgerEntry {
+  LedgerEntryType: "NFTokenOffer";
+  Amount: string;
+  Destination: string;
+  Expiration: 737282406;
+  Flags: NFTokenCreateOfferFlags;
+  NFTokenID: string;
+  NFTokenOfferNode: string;
+  Owner: string;
+  OwnerNode: string;
+  PreviousTxnID: string;
+  PreviousTxnLgrSeq: number;
 }
 
 export interface CiloNFTokenResponse extends BaseResponse {
