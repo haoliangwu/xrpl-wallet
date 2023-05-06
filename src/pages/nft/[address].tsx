@@ -112,6 +112,23 @@ export default function NFT() {
           </Col>
         )}
       </Row>
+      <Row gutter={16}>
+        <Col span={8} offset={8} className="text-center">
+          <Button
+            onClick={() => syncAccountNFTs(nftPage?.NextPageMin!)}
+            disabled={!nftPage?.NextPageMin}
+            className="mr-4"
+          >
+            Prev
+          </Button>
+          <Button
+            onClick={() => syncAccountNFTs(nftPage?.PreviousPageMin!)}
+            disabled={!nftPage?.PreviousPageMin}
+          >
+            Next
+          </Button>
+        </Col>
+      </Row>
       <Row gutter={16} className="items-center my-12">
         {nfts.length > 0 ? (
           nfts.map((nft) => {
