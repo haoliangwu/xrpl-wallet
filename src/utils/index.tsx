@@ -1,7 +1,9 @@
 import { Wallet, decodeXAddress, isValidXAddress } from "xrpl";
 
+// use 2 ** 30 as the max limit due to parseNFTokenID resolve to minus Taxon in edge-case
+// see: https://github.com/XRPLF/xrpl.js/blob/0f02e78d106facbdcc7ddf94e9bb0b68594c9d3c/packages/xrpl/src/utils/parseNFTokenID.ts#L25
 export const generateNFTokenTaxon = () =>
-  Number.parseInt(String(Math.random() * 2 ** 32));
+  Number.parseInt(String(Math.random() * 2 ** 30));
 
 export const resolveTxExpiration = (offset: number) =>
   Number.parseInt((Date.now() / 1000 + 946684800 + offset).toFixed(0));
