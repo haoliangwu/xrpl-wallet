@@ -361,6 +361,7 @@ export default function NFTDetail() {
           <Descriptions
             title={<Typography.Title level={3}>NFT Profile</Typography.Title>}
             layout="vertical"
+            column={4}
           >
             <Descriptions.Item label="Sequence">
               {parsedNFToken.Sequence}
@@ -368,7 +369,7 @@ export default function NFTDetail() {
             <Descriptions.Item label="Taxon">
               {parsedNFToken.Taxon}
             </Descriptions.Item>
-            <Descriptions.Item label="Fee">
+            <Descriptions.Item label="Fee" span={2}>
               {percentFormat(parsedNFToken.TransferFee, 3)}
             </Descriptions.Item>
             <Descriptions.Item label="Issuer" span={2}>
