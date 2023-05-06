@@ -196,7 +196,8 @@ export default function NFT() {
                     nft.URI ? (
                       // eslint-disable-next-line
                       <img
-                        width={272}
+                        width={100}
+                        height={100}
                         className="object-cover"
                         alt="nft cover"
                         src={normalizedUri}
