@@ -1,4 +1,10 @@
-import { Wallet, decodeXAddress, isValidXAddress } from "xrpl";
+import {
+  TransactionMetadata,
+  TxResponse,
+  Wallet,
+  decodeXAddress,
+  isValidXAddress,
+} from "xrpl";
 
 // use 2 ** 30 as the max limit due to parseNFTokenID resolve to minus Taxon in edge-case
 // see: https://github.com/XRPLF/xrpl.js/blob/0f02e78d106facbdcc7ddf94e9bb0b68594c9d3c/packages/xrpl/src/utils/parseNFTokenID.ts#L25
@@ -31,3 +37,13 @@ export const parseAccountId = (walletOrXAddress: Wallet | string) => {
 
 export const percentFormat = (s: number, precision: number = 2) =>
   (s / 10 ** precision).toFixed(precision) + " %";
+
+export const isTransactionMetadata = (
+  meta: any
+): meta is TransactionMetadata => {
+  return (
+    "AffectedNodes" in meta &&
+    "TransactionIndex" in meta &&
+    "TransactionResult" in meta
+  );
+};

@@ -15,7 +15,14 @@ import {
 import { UploadOutlined } from "@ant-design/icons";
 import { useRouter } from "next/router";
 import { useState } from "react";
-import { Client, NFTokenMintFlags, TxResponse, convertStringToHex } from "xrpl";
+import {
+  Client,
+  NFTokenMintFlags,
+  TxResponse,
+  convertStringToHex,
+  getNFTokenID,
+  TransactionMetadata
+} from "xrpl";
 import { Web3Storage } from "web3.storage";
 
 import {
@@ -23,7 +30,7 @@ import {
   useXrpLedgerClient,
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
-import { generateNFTokenTaxon } from "~/utils";
+import { generateNFTokenTaxon, isTransactionMetadata } from "~/utils";
 import { REPLACED_BY_TICKET_SEQUENCE } from "~/consts";
 
 const onFinishFailed = (errorInfo: any) => {
@@ -164,13 +171,27 @@ export default function CreateNFT() {
                     message.success(
                       `Multiple Mint ${res.length} NFTs TX Confirmed`
                     );
+
+                    router.push(
+                      `/nft/${wallet.map((w) => w.getXAddress()).orSome("")}`
+                    );
                   } else {
                     message.success(`TX ${res.id} Confirmed`);
-                  }
 
-                  router.push(
-                    `/nft/${wallet.map((w) => w.getXAddress()).orSome("")}`
-                  );
+                    if (isTransactionMetadata(res.result.meta)) {
+                      const nftId = getNFTokenID(res.result.meta);
+
+                      router.push(
+                        `/nft/${wallet
+                          .map((w) => w.getXAddress())
+                          .orSome("")}/${nftId}`
+                      );
+                    } else {
+                      router.push(
+                        `/nft/${wallet.map((w) => w.getXAddress()).orSome("")}`
+                      );
+                    }
+                  }
                 })
                 .finally(() => {
                   setLoading(false);

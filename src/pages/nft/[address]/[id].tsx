@@ -31,6 +31,7 @@ import {
 } from "xrpl";
 import useDidMount from "beautiful-react-hooks/useDidMount";
 import { Maybe } from "monet";
+import Link from "next/link";
 
 import {
   useWeb3Storage,
@@ -162,12 +163,16 @@ export default function NFTDetail() {
       )}
       <Row>
         <Col span={16}>
-          <Typography.Title level={3}>
-            NFT{" "}
+          <div className="flex gap-2 items-center">
+            <Link href={`/nft/${wallet.map((w) => w.getXAddress()).some()}`}>
+              <Typography.Title className="inline-block" level={3}>
+                NFTs
+              </Typography.Title>
+            </Link>
             <Typography.Text>
               / <ScannerText href={`/nft/${id}`}>{id}</ScannerText>
             </Typography.Text>
-          </Typography.Title>
+          </div>
         </Col>
       </Row>
       <Row>
