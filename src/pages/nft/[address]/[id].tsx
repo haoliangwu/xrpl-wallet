@@ -494,7 +494,14 @@ export default function NFTDetail() {
                         checked={buyOffer.exists(
                           (o) => o.nft_offer_index === item.nft_offer_index
                         )}
-                        onClick={() => setBuyOffer(Maybe.Some(item))}
+                        onClick={() =>
+                          setBuyOffer((prev) =>
+                            prev.cata(
+                              () => Maybe.Some(item),
+                              () => Maybe.None()
+                            )
+                          )
+                        }
                       />
                     </div>
                     <div className="flex gap-1">
