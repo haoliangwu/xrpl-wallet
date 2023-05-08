@@ -48,3 +48,8 @@ export const isTransactionMetadata = (
     "TransactionResult" in meta
   );
 };
+
+export const normalizeIpfsExternalLink = (uri: string) => {
+  const [cid, name] = uri.split("/");
+  return `https://${cid}.ipfs.w3s.link/${name}`;
+};

@@ -34,7 +34,7 @@ const ScannerText: React.FC<
                 "noopener"
               );
             } else {
-              window.open(`https://ipfs.io/ipfs${href}`, "_blank", "noopener");
+              window.open(href, "_blank", "noopener");
             }
           }
         );

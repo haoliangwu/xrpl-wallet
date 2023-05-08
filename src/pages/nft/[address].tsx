@@ -34,7 +34,7 @@ import {
 } from "~/hooks/useXrpLedgerHook";
 import { NFTokenPage, NFToken } from "~/types";
 import ScannerText from "~/components/ScannerText";
-import { parseAccountId } from "~/utils";
+import { normalizeIpfsExternalLink, parseAccountId } from "~/utils";
 
 export default function NFT() {
   const router = useRouter();
@@ -104,13 +104,14 @@ export default function NFT() {
 
   // init logic when comp is mounted
   useDidMount(() => {
-    if(isSelf) {
-
+    if (isSelf) {
       wallet.forEach((w) => {
         return syncAccountNFTs(`${parseAccountId(w)}FFFFFFFFFFFFFFFFFFFFFFFF`);
       });
     } else {
-      syncAccountNFTs(`${parseAccountId(xAddress as string)}FFFFFFFFFFFFFFFFFFFFFFFF`)
+      syncAccountNFTs(
+        `${parseAccountId(xAddress as string)}FFFFFFFFFFFFFFFFFFFFFFFF`
+      );
     }
   });
 
@@ -166,7 +167,7 @@ export default function NFT() {
             dataSource={nfts}
             renderItem={(nft) => {
               const normalizedUri = nft.URI
-                ? `https://ipfs.io/ipfs/${convertHexToString(nft.URI ?? "")}`
+                ? normalizeIpfsExternalLink(convertHexToString(nft.URI))
                 : "";
               const parsedNFToken = parseNFTokenID(nft.NFTokenID);
 

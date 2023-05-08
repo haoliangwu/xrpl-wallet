@@ -41,7 +41,7 @@ import {
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
 import { ArrayElement, CiloNFTokenResponse, NFTokenOffer } from "~/types";
-import { percentFormat, resolveTxExpiration } from "~/utils";
+import { normalizeIpfsExternalLink, percentFormat, resolveTxExpiration } from "~/utils";
 import ScannerText from "~/components/ScannerText";
 
 type NFTState = CiloNFTokenResponse["result"] & {
@@ -150,7 +150,7 @@ export default function NFTDetail() {
   const formRefBuy = useRef<FormInstance>(null);
 
   const normalizedUri = nft
-    .map((e) => `https://ipfs.io/ipfs/${e.uri}`)
+    .map((e) => normalizeIpfsExternalLink(e.uri))
     .orSome("");
 
   const parsedNFToken = parseNFTokenID(id as string);

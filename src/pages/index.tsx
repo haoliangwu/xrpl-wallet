@@ -27,7 +27,7 @@ import {
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
 import ScannerText from "~/components/ScannerText";
-import { parseAccountId } from "~/utils";
+import { normalizeIpfsExternalLink, parseAccountId } from "~/utils";
 
 export default function Home() {
   const router = useRouter();
@@ -270,7 +270,9 @@ export default function Home() {
                         <ScannerText
                           className="text-xs"
                           type="ipfs"
-                          href={`/${convertHexToString(tx.URI ?? "")}`}
+                          href={normalizeIpfsExternalLink(
+                            convertHexToString(tx.URI ?? '')
+                          )}
                         >
                           {convertHexToString(tx.URI ?? "-")}
                         </ScannerText>
