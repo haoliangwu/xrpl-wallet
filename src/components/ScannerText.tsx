@@ -3,8 +3,6 @@ import cls from "classnames";
 import { useXrpLedgerClient } from "~/hooks/useXrpLedgerHook";
 import { XrpLogoIcon, IpfsLogoIcon } from "./Icons";
 
-const isTestNet = (s: string) => s.indexOf("altnet.rippletest.net");
-
 const ScannerText: React.FC<
   PropsWithChildren<{
     href: string | (() => Promise<string>);
@@ -29,7 +27,7 @@ const ScannerText: React.FC<
             if (type === "xrp") {
               // todo: remove the hard-code logic
               window.open(
-                `https://testnet.xrpl.org${href}`,
+                `https://${network}net.xrpl.org${href}`,
                 "_blank",
                 "noopener"
               );
