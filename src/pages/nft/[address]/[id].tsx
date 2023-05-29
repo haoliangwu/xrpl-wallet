@@ -42,7 +42,11 @@ import {
   useXrpLedgerWallet,
 } from "~/hooks/useXrpLedgerHook";
 import { ArrayElement, CiloNFTokenResponse, NFTokenOffer } from "~/types";
-import { normalizeIpfsExternalLink, percentFormat, resolveTxExpiration } from "~/utils";
+import {
+  normalizeIpfsExternalLink,
+  percentFormat,
+  resolveTxExpiration,
+} from "~/utils";
 import ScannerText from "~/components/ScannerText";
 
 type NFTState = CiloNFTokenResponse["result"] & {
@@ -54,7 +58,7 @@ type BuyOfferState = ArrayElement<NFTBuyOffersResponse["result"]["offers"]>;
 
 export default function NFTDetail() {
   const router = useRouter();
-  const { address: xAddress, id } = router.query;
+  const { id } = router.query;
   const [loading, setLoading] = useState(false);
   const { client, ciloClient } = useXrpLedgerClient();
   const { wallet } = useXrpLedgerWallet();
@@ -62,8 +66,6 @@ export default function NFTDetail() {
 
   const [buyOffer, setBuyOffer] = useState<Maybe<BuyOfferState>>(Maybe.None());
   const [nft, setNFT] = useState<Maybe<NFTState>>(Maybe.None());
-
-  const isSelf = wallet.exists((w) => w.getXAddress() === xAddress);
 
   const syncAccountNFTs = useCallback(() => {
     wallet
@@ -155,7 +157,11 @@ export default function NFTDetail() {
     .orSome("");
 
   const parsedNFToken = parseNFTokenID(id as string);
-  const { classicAddress } = xAddressToClassicAddress(xAddress as string);
+
+  const isSelf = wallet
+    .map((w) => (nft: NFTState) => nft.owner === w.address)
+    .apTo(nft)
+    .orSome(false);
 
   return (
     <div>
@@ -603,12 +609,12 @@ export default function NFTDetail() {
             .map((w) => (c: Client) => (nft: NFTState) => {
               return c
                 .autofill({
-                  Owner: classicAddress as string,
+                  Owner: nft.owner as string,
                   Account: w.address,
                   TransactionType: "NFTokenCreateOffer",
                   NFTokenID: nft.nft_id,
                   Amount: xrpToDrops(formRefBuy.current?.getFieldValue("qty")),
-                  Destination: classicAddress as string,
+                  Destination: nft.owner as string,
                   // todo: it could be customized
                   Expiration: resolveTxExpiration(1000 * 3600 * 24 * 7),
                 })
