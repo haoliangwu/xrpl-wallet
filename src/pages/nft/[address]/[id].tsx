@@ -24,6 +24,7 @@ import {
   NFTokenCreateOfferFlags,
   NFTokenMintFlags,
   TxResponse,
+  convertHexToString,
   dropsToXrp,
   parseNFTokenID,
   rippleTimeToUnixTime,
@@ -150,7 +151,7 @@ export default function NFTDetail() {
   const formRefBuy = useRef<FormInstance>(null);
 
   const normalizedUri = nft
-    .map((e) => normalizeIpfsExternalLink(e.uri))
+    .map((e) => normalizeIpfsExternalLink(convertHexToString(e.uri)))
     .orSome("");
 
   const parsedNFToken = parseNFTokenID(id as string);
